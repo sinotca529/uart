@@ -1,6 +1,6 @@
-use crate::controller::{command_stream::CommandStream, Controller};
+use crate::{canvas::Canvas, controller::mode::Mode};
 use crossterm::{
-    execute,
+    event, execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use tui::{
@@ -9,25 +9,26 @@ use tui::{
     Frame, Terminal,
 };
 
-pub struct View {
-    ctrl: Controller,
-    cmd_stream: CommandStream,
+pub struct App {
+    canvas: Canvas,
+    mode: Mode,
 }
 
-impl View {
-    pub fn new(ctrl: Controller, cmd_stream: CommandStream) -> Self {
-        Self { ctrl, cmd_stream }
+impl App {
+    pub fn new() -> Self {
+        App {
+            canvas: Canvas::new(),
+            mode: Mode::new(),
+        }
     }
 
-    pub fn render(&self, f: &mut Frame<impl Backend>) {
-        let model = self.ctrl.model();
-
+    fn render(&self, f: &mut Frame<impl Backend>) {
         let chunks1 = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Length(f.size().height - 3),
-                    Constraint::Length(3),
+                    Constraint::Length(f.size().height - 1),
+                    Constraint::Length(1),
                 ]
                 .as_ref(),
             )
@@ -38,18 +39,18 @@ impl View {
             .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
             .split(chunks1[0]);
 
-        f.render_widget(model, chunks2[1]);
-        f.render_widget(&self.cmd_stream, chunks1[1]);
+        f.render_widget(&self.canvas, chunks2[1]);
+        f.render_widget(&self.mode, chunks1[1]);
     }
 
     fn main_loop(&mut self, terminal: &mut Terminal<impl Backend>) {
-        use crate::controller::command::Command::*;
+        use crate::controller::AppOp::*;
         loop {
             terminal.draw(|f| self.render(f)).unwrap();
-
-            match self.cmd_stream.next() {
-                Quit => break,
-                _ => {}
+            let op = self.mode.trans(event::read().unwrap());
+            match op {
+                QuitApp => break,
+                Nop => {}
             }
         }
     }

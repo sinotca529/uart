@@ -1,5 +1,5 @@
-use super::ShapeIf;
-use crate::{model::style::Style, util::*};
+use super::{style::Style, ShapeIf};
+use crate::util::*;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct Rect {

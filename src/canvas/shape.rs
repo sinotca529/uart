@@ -1,6 +1,6 @@
 use crate::util::Size;
-pub mod line;
 pub mod rect;
+pub mod style;
 
 use rect::Rect;
 

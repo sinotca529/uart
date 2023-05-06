@@ -10,6 +10,12 @@ impl Coord {
     }
 }
 
+impl Default for Coord {
+    fn default() -> Self {
+        Coord::new(0, 0)
+    }
+}
+
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct Size {
     pub width: u16,

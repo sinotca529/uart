@@ -1,6 +1,5 @@
 pub mod shape;
 mod shape_id;
-mod style;
 
 use self::{
     shape::Shape,
@@ -14,12 +13,12 @@ use tui::{
     widgets::{Paragraph, Widget},
 };
 
-pub struct Model {
+pub struct Canvas {
     sig: IdGenerator,
     shapes: HashMap<Id, (Coord, Shape)>,
 }
 
-impl Model {
+impl Canvas {
     pub fn new() -> Self {
         Self {
             sig: IdGenerator::new(),
@@ -38,7 +37,7 @@ impl Model {
     }
 }
 
-impl Widget for &Model {
+impl Widget for &Canvas {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         for (coord, shape) in self.shapes() {
             let upper_left = Coord::new(area.x + coord.x, area.y + coord.y);
