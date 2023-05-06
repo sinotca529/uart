@@ -6,13 +6,16 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
-use self::{command::CmdMode, make_rect::MakeRectMode, normal::NormalMode};
+use self::{
+    command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, normal::NormalMode,
+};
 use crate::util::Coord;
 
 use super::AppOp;
 
 mod command;
 mod make_rect;
+mod make_text;
 mod normal;
 
 trait ModeIf {
@@ -25,6 +28,7 @@ pub enum Mode {
     Norm(NormalMode),
     Cmd(CmdMode),
     MakeRect(MakeRectMode),
+    MakeText(MakeTextMode),
 }
 
 impl Mode {
@@ -37,6 +41,7 @@ impl Mode {
             Mode::Norm(m) => m,
             Mode::Cmd(m) => m,
             Mode::MakeRect(m) => m,
+            Mode::MakeText(m) => m,
         }
     }
 
@@ -57,6 +62,7 @@ impl Mode {
             Mode::Norm(m) => m.next(e),
             Mode::Cmd(m) => m.next(e),
             Mode::MakeRect(m) => m.next(e),
+            Mode::MakeText(m) => m.next(e),
         };
 
         *self = next_mode;
@@ -66,6 +72,7 @@ impl Mode {
 
 impl Widget for &Mode {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        // todo refact
         let text;
         let fg_color;
 
@@ -80,6 +87,10 @@ impl Widget for &Mode {
             }
             Mode::MakeRect(_) => {
                 text = "Make rect with Enter";
+                fg_color = Color::White;
+            }
+            Mode::MakeText(_) => {
+                text = "Make text with Esc";
                 fg_color = Color::White;
             }
         }

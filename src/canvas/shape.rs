@@ -1,22 +1,27 @@
 use crate::util::Size;
 pub mod rect;
 pub mod style;
+pub mod text;
 
 use rect::Rect;
+
+use self::text::Text;
 
 pub trait ShapeIf: ToString {
     fn size(&self) -> Size;
 }
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub enum Shape {
     Rect(Rect),
+    Text(Text),
 }
 
 impl Shape {
-    fn inner(&self) -> &impl ShapeIf {
+    fn inner(&self) -> &dyn ShapeIf {
         match &self {
             Shape::Rect(i) => i,
+            Shape::Text(i) => i,
         }
     }
 

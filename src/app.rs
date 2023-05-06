@@ -50,6 +50,9 @@ impl App {
                 MakeRect(c, r) => {
                     self.canvas.add_shape(c, r.into());
                 }
+                MakeText(c, t) => {
+                    self.canvas.add_shape(c, t.into());
+                }
             }
         }
     }

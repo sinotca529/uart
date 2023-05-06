@@ -1,4 +1,4 @@
-use super::{command::CmdMode, make_rect::MakeRectMode, Mode, ModeIf};
+use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode, ModeIf};
 use crate::{
     controller::AppOp,
     util::{Coord, Direction},
@@ -12,6 +12,8 @@ enum Op {
     EnterCmd,
     /// Change to make rect mode.
     EnterMakeRect,
+    /// Change to make text mode.
+    EnterMakeText,
     /// Move Cursor
     MoveCursor(Direction),
     /// Do nothing.
@@ -29,6 +31,7 @@ impl From<Event> for Op {
                     'k' => Op::MoveCursor(Direction::Up),
                     'l' => Op::MoveCursor(Direction::Right),
                     'r' => Op::EnterMakeRect,
+                    't' => Op::EnterMakeText,
                     _ => Op::Nop,
                 },
                 _ => Op::Nop,
@@ -65,6 +68,7 @@ impl ModeIf for NormalMode {
                 (self.into(), AppOp::Nop)
             }
             Op::EnterMakeRect => (MakeRectMode::new(self.canvas_cursor).into(), AppOp::Nop),
+            Op::EnterMakeText => (MakeTextMode::new(self.canvas_cursor).into(), AppOp::Nop),
         }
     }
 
