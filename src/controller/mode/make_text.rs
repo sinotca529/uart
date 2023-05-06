@@ -13,7 +13,7 @@ use crate::{
 
 use super::{normal::NormalMode, Mode, ModeIf};
 
-use unicode_width::UnicodeWidthChar;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 enum Op {
     MakeText,
@@ -83,6 +83,8 @@ impl ModeIf for MakeTextMode {
                 match c {
                     Some('\n') => {
                         self.canvas_cursor.y -= 1;
+                        self.canvas_cursor.x +=
+                            UnicodeWidthStr::width(self.text.lines().last().unwrap_or("")) as u16;
                     }
                     Some(c) => {
                         self.canvas_cursor.x -= UnicodeWidthChar::width(c).unwrap() as u16;
