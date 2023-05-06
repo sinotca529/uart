@@ -1,10 +1,14 @@
-use super::{command::CmdMode, make_rect::MakeRectMode, Mode, ModeIf};
+use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode, ModeIf};
 use crate::{
     controller::AppOp,
     util::{Coord, Direction},
 };
 use crossterm::event::{Event, KeyCode};
-use tui::style::Color;
+use tui::{
+    layout::Alignment,
+    style::{Color, Style},
+    widgets::{Paragraph, Wrap},
+};
 
 /// Operations for normal mode.
 enum Op {
@@ -12,6 +16,8 @@ enum Op {
     EnterCmd,
     /// Change to make rect mode.
     EnterMakeRect,
+    /// Change to make text mode.
+    EnterMakeText,
     /// Move Cursor
     MoveCursor(Direction),
     /// Do nothing.
@@ -29,6 +35,7 @@ impl From<Event> for Op {
                     'k' => Op::MoveCursor(Direction::Up),
                     'l' => Op::MoveCursor(Direction::Right),
                     'r' => Op::EnterMakeRect,
+                    't' => Op::EnterMakeText,
                     _ => Op::Nop,
                 },
                 _ => Op::Nop,
@@ -65,14 +72,24 @@ impl ModeIf for NormalMode {
                 (self.into(), AppOp::Nop)
             }
             Op::EnterMakeRect => (MakeRectMode::new(self.canvas_cursor).into(), AppOp::Nop),
+            Op::EnterMakeText => (MakeTextMode::new(self.canvas_cursor).into(), AppOp::Nop),
         }
     }
 
     fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        // draw cursor
-        let Coord { x, y } = self.canvas_cursor;
-        buf.get_mut(area.x + x, area.y + y)
-            .set_bg(Color::Rgb(128, 128, 128));
+        self.render_cursor(area, buf);
+    }
+
+    fn status_msg(&self) -> tui::widgets::Paragraph {
+        let t = tui::text::Text::raw("NORM [:]cmd [r]rect [t]text");
+        Paragraph::new(t)
+            .style(
+                Style::default()
+                    .fg(Color::Rgb(255, 255, 255))
+                    .bg(Color::Rgb(50, 50, 50)),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: false })
     }
 }
 

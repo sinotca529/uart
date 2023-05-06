@@ -2,16 +2,12 @@ pub mod shape;
 mod shape_id;
 
 use self::{
-    shape::Shape,
+    shape::{Shape, ShapeWithCoord},
     shape_id::{Id, IdGenerator},
 };
-use crate::util::{make_area, Coord};
+use crate::util::Coord;
 use std::collections::BTreeMap;
-use tui::{
-    layout::Alignment,
-    text::Text,
-    widgets::{Paragraph, Widget},
-};
+use tui::widgets::Widget;
 
 pub struct Canvas {
     sig: IdGenerator,
@@ -40,12 +36,7 @@ impl Canvas {
 impl Widget for &Canvas {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         for (coord, shape) in self.shapes() {
-            let upper_left = Coord::new(area.x + coord.x, area.y + coord.y);
-            let area = make_area(&upper_left, &shape.size());
-
-            let t: Text = shape.to_string().into();
-            let p = Paragraph::new(t).alignment(Alignment::Left);
-            p.render(area, buf);
+            ShapeWithCoord::new(shape.into(), coord).render(area, buf);
         }
     }
 }

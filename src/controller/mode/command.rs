@@ -1,5 +1,9 @@
 use crossterm::event::{Event, KeyCode};
-use tui::style::Color;
+use tui::{
+    layout::Alignment,
+    style::{Color, Style},
+    widgets::{Paragraph, Wrap},
+};
 
 use super::{normal::NormalMode, Mode, ModeIf};
 use crate::{controller::AppOp, util::Coord};
@@ -87,6 +91,18 @@ impl ModeIf for CmdMode {
         let Coord { x, y } = self.canvas_cursor;
         buf.get_mut(area.x + x, area.y + y)
             .set_bg(Color::Rgb(128, 128, 128));
+    }
+
+    fn status_msg(&self) -> tui::widgets::Paragraph {
+        let t = tui::text::Text::raw(self.cmd.clone());
+        Paragraph::new(t)
+            .style(
+                Style::default()
+                    .fg(Color::Rgb(255, 255, 255))
+                    .bg(Color::Rgb(50, 50, 50)),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: false })
     }
 }
 

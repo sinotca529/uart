@@ -1,30 +1,38 @@
 use crossterm::event::Event;
 use tui::{
-    layout::Alignment,
     style::{Color, Style},
-    text::Text,
-    widgets::{Block, Borders, Paragraph, Widget, Wrap},
+    widgets::{Block, Borders, Paragraph, Widget},
 };
 
-use self::{command::CmdMode, make_rect::MakeRectMode, normal::NormalMode};
+use self::{
+    command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, normal::NormalMode,
+};
 use crate::util::Coord;
 
 use super::AppOp;
 
 mod command;
 mod make_rect;
+mod make_text;
 mod normal;
 
 trait ModeIf {
     fn canvas_cursor(&self) -> &Coord;
     fn next(self, e: Event) -> (Mode, AppOp);
     fn modify_canvas_view(&self, _area: tui::layout::Rect, _buf: &mut tui::buffer::Buffer) {}
+    fn status_msg(&self) -> Paragraph;
+    fn render_cursor(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        let Coord { x, y } = self.canvas_cursor();
+        buf.get_mut(area.x + x, area.y + y)
+            .set_bg(Color::Rgb(128, 128, 128));
+    }
 }
 
 pub enum Mode {
     Norm(NormalMode),
     Cmd(CmdMode),
     MakeRect(MakeRectMode),
+    MakeText(MakeTextMode),
 }
 
 impl Mode {
@@ -32,20 +40,8 @@ impl Mode {
         Self::Norm(NormalMode::new(Coord::new(0, 0)))
     }
 
-    fn inner(&self) -> &dyn ModeIf {
-        match self {
-            Mode::Norm(m) => m,
-            Mode::Cmd(m) => m,
-            Mode::MakeRect(m) => m,
-        }
-    }
-
     pub fn canvas_modify_widget(&self) -> CanvasModifyWidget {
-        CanvasModifyWidget { mode: self.inner() }
-    }
-
-    pub fn canvas_cursor(&self) -> &Coord {
-        self.inner().canvas_cursor()
+        CanvasModifyWidget { mode: self.into() }
     }
 
     pub fn trans(&mut self, e: Event) -> AppOp {
@@ -57,6 +53,7 @@ impl Mode {
             Mode::Norm(m) => m.next(e),
             Mode::Cmd(m) => m.next(e),
             Mode::MakeRect(m) => m.next(e),
+            Mode::MakeText(m) => m.next(e),
         };
 
         *self = next_mode;
@@ -66,33 +63,11 @@ impl Mode {
 
 impl Widget for &Mode {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        let text;
-        let fg_color;
-
-        match self {
-            Mode::Norm(_) => {
-                text = "Begin command by ':'";
-                fg_color = Color::Rgb(128, 128, 128);
-            }
-            Mode::Cmd(c) => {
-                text = c.cmd();
-                fg_color = Color::White;
-            }
-            Mode::MakeRect(_) => {
-                text = "Make rect with Enter";
-                fg_color = Color::White;
-            }
-        }
-
         let cmd_line = Block::default()
             .borders(Borders::NONE)
             .style(Style::default().bg(Color::Rgb(50, 50, 50)));
-        let msg = Paragraph::new(Text::raw(text))
-            .block(cmd_line)
-            .style(Style::default().fg(fg_color).bg(Color::Rgb(50, 50, 50)))
-            .alignment(Alignment::Left)
-            .wrap(Wrap { trim: false });
-        msg.render(area, buf);
+        let m: &dyn ModeIf = self.into();
+        m.status_msg().block(cmd_line).render(area, buf);
     }
 }
 
@@ -103,5 +78,16 @@ pub struct CanvasModifyWidget<'a> {
 impl<'a> Widget for CanvasModifyWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         self.mode.modify_canvas_view(area, buf)
+    }
+}
+
+impl<'a> From<&'a Mode> for &'a dyn ModeIf {
+    fn from(val: &'a Mode) -> Self {
+        match val {
+            Mode::Norm(m) => m,
+            Mode::Cmd(m) => m,
+            Mode::MakeRect(m) => m,
+            Mode::MakeText(m) => m,
+        }
     }
 }

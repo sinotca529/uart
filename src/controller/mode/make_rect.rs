@@ -2,14 +2,13 @@ use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
-    text::Text,
-    widgets::{Paragraph, Widget},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::{
-    canvas::shape::{rect::Rect, ShapeIf},
+    canvas::shape::{rect::Rect, ShapeWithCoord},
     controller::AppOp,
-    util::{make_area, Coord, Direction, Size},
+    util::{Coord, Direction, Size},
 };
 
 use super::{normal::NormalMode, Mode, ModeIf};
@@ -80,7 +79,7 @@ impl ModeIf for MakeRectMode {
             }
             Op::MakeRect => {
                 let (start, rect) = self.make_rect();
-                let op = AppOp::MakeRect(start, rect);
+                let op = AppOp::MakeShape(start, rect.into());
                 let mode = NormalMode::new(self.canvas_cursor).into();
                 (mode, op)
             }
@@ -88,18 +87,21 @@ impl ModeIf for MakeRectMode {
     }
 
     fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        // draw rect
         let (start, rect) = self.make_rect();
-        let upper_left = Coord::new(area.x + start.x, area.y + start.y);
-        let shape_area = make_area(&upper_left, &rect.size());
-        let t = Text::styled(rect.to_string(), Style::default().fg(Color::Rgb(0, 0, 128)));
-        let p = Paragraph::new(t).alignment(Alignment::Left);
-        p.render(shape_area, buf);
+        ShapeWithCoord::new(&rect, &start).render(area, buf);
+        self.render_cursor(area, buf);
+    }
 
-        // draw cursor
-        let Coord { x, y } = self.canvas_cursor;
-        buf.get_mut(area.x + x, area.y + y)
-            .set_bg(Color::Rgb(128, 128, 128));
+    fn status_msg(&self) -> tui::widgets::Paragraph {
+        let t = tui::text::Text::raw("RECT [Enter]Complete");
+        Paragraph::new(t)
+            .style(
+                Style::default()
+                    .fg(Color::Rgb(255, 255, 255))
+                    .bg(Color::Rgb(50, 50, 50)),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: false })
     }
 }
 
