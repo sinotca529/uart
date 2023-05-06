@@ -46,13 +46,8 @@ impl App {
             let op = self.mode.trans(event::read().unwrap());
             match op {
                 QuitApp => break,
+                MakeShape(c, s) => self.canvas.add_shape(c, s),
                 Nop => {}
-                MakeRect(c, r) => {
-                    self.canvas.add_shape(c, r.into());
-                }
-                MakeText(c, t) => {
-                    self.canvas.add_shape(c, t.into());
-                }
             }
         }
     }

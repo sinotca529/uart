@@ -6,7 +6,7 @@ use tui::{
 };
 
 use crate::{
-    canvas::shape::{text::Text, ShapeIf},
+    canvas::shape::{text::Text, ShapeIf, ShapeWithCoord},
     controller::AppOp,
     util::{make_area, Coord, Direction},
 };
@@ -62,7 +62,7 @@ impl ModeIf for MakeTextMode {
             Op::Nop => (self.into(), AppOp::Nop),
             Op::MakeText => {
                 let mode = NormalMode::new(self.canvas_cursor).into();
-                let op = AppOp::MakeText(self.start_coord, Text::new(self.text.clone()));
+                let op = AppOp::MakeShape(self.start_coord, Text::new(self.text.clone()).into());
                 (mode, op)
             }
             Op::AddChar(c) => {
@@ -93,12 +93,7 @@ impl ModeIf for MakeTextMode {
     fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         // draw text
         let text = Text::new(self.text.clone());
-        let upper_left = Coord::new(area.x + self.start_coord.x, area.y + self.start_coord.y);
-        let shape_area = make_area(&upper_left, &text.size());
-        let t =
-            tui::text::Text::styled(text.to_string(), Style::default().fg(Color::Rgb(0, 0, 128)));
-        let p = Paragraph::new(t).alignment(Alignment::Left);
-        p.render(shape_area, buf);
+        ShapeWithCoord::new(&text, &self.start_coord).render(area, buf);
     }
 }
 
