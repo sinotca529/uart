@@ -6,24 +6,23 @@ use self::{
     shape_id::{Id, IdGenerator},
 };
 use crate::util::{make_area, Coord};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use tui::{
     layout::Alignment,
-    style::Color,
     text::Text,
     widgets::{Paragraph, Widget},
 };
 
 pub struct Canvas {
     sig: IdGenerator,
-    shapes: HashMap<Id, (Coord, Shape)>,
+    shapes: BTreeMap<Id, (Coord, Shape)>,
 }
 
 impl Canvas {
     pub fn new() -> Self {
         Self {
             sig: IdGenerator::new(),
-            shapes: HashMap::new(),
+            shapes: BTreeMap::new(),
         }
     }
 
@@ -34,7 +33,7 @@ impl Canvas {
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = &(Coord, Shape)> {
-        self.shapes.values()
+        self.shapes.iter().map(|e| e.1)
     }
 }
 

@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
 pub struct Id(usize);
 
 pub struct IdGenerator {
