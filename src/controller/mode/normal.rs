@@ -77,10 +77,7 @@ impl ModeIf for NormalMode {
     }
 
     fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        // draw cursor
-        let Coord { x, y } = self.canvas_cursor;
-        buf.get_mut(area.x + x, area.y + y)
-            .set_bg(Color::Rgb(128, 128, 128));
+        self.render_cursor(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

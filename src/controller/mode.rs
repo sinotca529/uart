@@ -21,6 +21,11 @@ trait ModeIf {
     fn next(self, e: Event) -> (Mode, AppOp);
     fn modify_canvas_view(&self, _area: tui::layout::Rect, _buf: &mut tui::buffer::Buffer) {}
     fn status_msg(&self) -> Paragraph;
+    fn render_cursor(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        let Coord { x, y } = self.canvas_cursor();
+        buf.get_mut(area.x + x, area.y + y)
+            .set_bg(Color::Rgb(128, 128, 128));
+    }
 }
 
 pub enum Mode {

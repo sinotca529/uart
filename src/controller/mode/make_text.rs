@@ -8,10 +8,12 @@ use tui::{
 use crate::{
     canvas::shape::{text::Text, ShapeWithCoord},
     controller::AppOp,
-    util::{Coord, Direction},
+    util::Coord,
 };
 
 use super::{normal::NormalMode, Mode, ModeIf};
+
+use unicode_width::UnicodeWidthChar;
 
 enum Op {
     MakeText,
@@ -67,33 +69,35 @@ impl ModeIf for MakeTextMode {
             }
             Op::AddChar(c) => {
                 self.text.push(c);
-                self.canvas_cursor = self.canvas_cursor.adjacency(Direction::Right);
+                self.canvas_cursor.x += UnicodeWidthChar::width(c).unwrap() as u16;
                 (self.into(), AppOp::Nop)
             }
             Op::Enter => {
                 self.text.push('\n');
-                self.canvas_cursor = self.canvas_cursor.adjacency(Direction::Down);
+                self.canvas_cursor.y += 1;
+                self.canvas_cursor.x = self.start_coord.x;
                 (self.into(), AppOp::Nop)
             }
             Op::Backspace => {
                 let c = self.text.pop();
-                // Todo update cursor pos
-                // match c {
-                //     Some('\n') => {
-                //         self.canvas_cursor = self.canvas_cursor.adjacency(Direction::Up);
-                //     },
-                //     Some(c) => {},
-                //     _ => {},
-                // }
+                match c {
+                    Some('\n') => {
+                        self.canvas_cursor.y -= 1;
+                    }
+                    Some(c) => {
+                        self.canvas_cursor.x -= UnicodeWidthChar::width(c).unwrap() as u16;
+                    }
+                    _ => {}
+                }
                 (self.into(), AppOp::Nop)
             }
         }
     }
 
     fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        // draw text
         let text = Text::new(self.text.clone());
         ShapeWithCoord::new(&text, &self.start_coord).render(area, buf);
+        self.render_cursor(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {
