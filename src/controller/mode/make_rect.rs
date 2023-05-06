@@ -1,19 +1,16 @@
-use super::{command::CmdMode, make_rect::MakeRectMode, Mode};
-use crate::{
-    controller::AppOp,
-    util::{Coord, Direction},
-};
 use crossterm::event::{Event, KeyCode};
 
-/// Operations for normal mode.
+use crate::{
+    canvas::shape::rect::Rect,
+    controller::AppOp,
+    util::{Coord, Direction, Size},
+};
+
+use super::{normal::NormalMode, Mode};
+
 enum Op {
-    /// Change to cmd mode.
-    EnterCmd,
-    /// Change to make rect mode.
-    EnterMakeRect,
-    /// Move Cursor
     MoveCursor(Direction),
-    /// Do nothing.
+    MakeRect,
     Nop,
 }
 
@@ -21,13 +18,12 @@ impl From<Event> for Op {
     fn from(e: Event) -> Self {
         match e {
             Event::Key(k) => match k.code {
+                KeyCode::Enter => Op::MakeRect,
                 KeyCode::Char(c) => match c {
-                    ':' => Op::EnterCmd,
                     'h' => Op::MoveCursor(Direction::Left),
                     'j' => Op::MoveCursor(Direction::Down),
                     'k' => Op::MoveCursor(Direction::Up),
                     'l' => Op::MoveCursor(Direction::Right),
-                    'r' => Op::EnterMakeRect,
                     _ => Op::Nop,
                 },
                 _ => Op::Nop,
@@ -37,13 +33,17 @@ impl From<Event> for Op {
     }
 }
 
-pub struct NormalMode {
+pub struct MakeRectMode {
     canvas_cursor: Coord,
+    start_coord: Coord,
 }
 
-impl NormalMode {
+impl MakeRectMode {
     pub fn new(canvas_cursor: Coord) -> Self {
-        Self { canvas_cursor }
+        Self {
+            canvas_cursor,
+            start_coord: canvas_cursor,
+        }
     }
 
     pub fn canvas_cursor(&self) -> &Coord {
@@ -52,22 +52,31 @@ impl NormalMode {
 
     pub fn next(mut self, e: Event) -> (Mode, AppOp) {
         match e.into() {
-            Op::EnterCmd => {
-                let cmd = CmdMode::new(self.canvas_cursor).into();
-                (cmd, AppOp::Nop)
-            }
             Op::Nop => (self.into(), AppOp::Nop),
             Op::MoveCursor(d) => {
                 self.canvas_cursor = self.canvas_cursor.adjacency(d);
                 (self.into(), AppOp::Nop)
             }
-            Op::EnterMakeRect => (MakeRectMode::new(self.canvas_cursor).into(), AppOp::Nop),
+            Op::MakeRect => {
+                let w = self.start_coord.x.abs_diff(self.canvas_cursor.x) + 1;
+                let h = self.start_coord.y.abs_diff(self.canvas_cursor.y) + 1;
+                let rect = Rect::new(Size::new(w, h));
+
+                let x = self.start_coord.x.min(self.canvas_cursor.x);
+                let y = self.start_coord.y.min(self.canvas_cursor.y);
+                let start = Coord::new(x, y);
+
+                let op = AppOp::MakeRect(start, rect);
+
+                let mode = NormalMode::new(self.canvas_cursor).into();
+                (mode, op)
+            }
         }
     }
 }
 
-impl From<NormalMode> for Mode {
-    fn from(val: NormalMode) -> Self {
-        Mode::Norm(val)
+impl From<MakeRectMode> for Mode {
+    fn from(val: MakeRectMode) -> Self {
+        Mode::MakeRect(val)
     }
 }

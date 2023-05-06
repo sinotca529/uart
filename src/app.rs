@@ -37,13 +37,8 @@ impl App {
             )
             .split(f.size());
 
-        let chunks2 = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
-            .split(chunks1[0]);
-
         let cw = CanvasWidget::new(&self.canvas, self.mode.canvas_cursor());
-        f.render_widget(cw, chunks2[1]);
+        f.render_widget(cw, chunks1[0]);
         f.render_widget(&self.mode, chunks1[1]);
     }
 
@@ -55,6 +50,9 @@ impl App {
             match op {
                 QuitApp => break,
                 Nop => {}
+                MakeRect(c, r) => {
+                    self.canvas.add_shape(c, r.into());
+                }
             }
         }
     }

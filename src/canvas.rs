@@ -54,6 +54,7 @@ impl<'a> CanvasWidget<'a> {
 
 impl<'a> Widget for CanvasWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        // dbg!(area);
         for (coord, shape) in self.canvas.shapes() {
             let upper_left = Coord::new(area.x + coord.x, area.y + coord.y);
             let area = make_area(&upper_left, &shape.size());
@@ -63,6 +64,7 @@ impl<'a> Widget for CanvasWidget<'a> {
             p.render(area, buf);
         }
         let Coord { x, y } = &self.cursor_coord;
-        buf.get_mut(*x, *y).set_bg(Color::Rgb(128, 128, 128));
+        buf.get_mut(area.x + *x, area.y + *y)
+            .set_bg(Color::Rgb(128, 128, 128));
     }
 }

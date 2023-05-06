@@ -6,17 +6,19 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
-use self::{command::CmdMode, normal::NormalMode};
+use self::{command::CmdMode, make_rect::MakeRectMode, normal::NormalMode};
 use crate::util::Coord;
 
 use super::AppOp;
 
-pub mod command;
-pub mod normal;
+mod command;
+mod make_rect;
+mod normal;
 
 pub enum Mode {
     Norm(NormalMode),
     Cmd(CmdMode),
+    MakeRect(MakeRectMode),
 }
 
 impl Mode {
@@ -28,6 +30,7 @@ impl Mode {
         match self {
             Mode::Norm(m) => m.canvas_cursor(),
             Mode::Cmd(m) => m.canvas_cursor(),
+            Mode::MakeRect(m) => m.canvas_cursor(),
         }
     }
 
@@ -38,6 +41,7 @@ impl Mode {
         let (next_mode, app_op) = match old {
             Mode::Norm(m) => m.next(e),
             Mode::Cmd(m) => m.next(e),
+            Mode::MakeRect(m) => m.next(e),
         };
 
         *self = next_mode;
@@ -57,6 +61,10 @@ impl Widget for &Mode {
             }
             Mode::Cmd(c) => {
                 text = c.cmd();
+                fg_color = Color::White;
+            }
+            Mode::MakeRect(_) => {
+                text = "Make rect with Enter";
                 fg_color = Color::White;
             }
         }
