@@ -1,6 +1,7 @@
 use crossterm::event::{Event, KeyCode};
+use tui::style::Color;
 
-use super::{normal::NormalMode, Mode};
+use super::{normal::NormalMode, Mode, ModeIf};
 use crate::{controller::AppOp, util::Coord};
 
 /// Operations for command mode.
@@ -42,15 +43,17 @@ impl CmdMode {
         }
     }
 
-    pub fn canvas_cursor(&self) -> &Coord {
-        &self.canvas_cursor
-    }
-
     pub fn cmd(&self) -> &String {
         &self.cmd
     }
+}
 
-    pub fn next(mut self, e: Event) -> (Mode, AppOp) {
+impl ModeIf for CmdMode {
+    fn canvas_cursor(&self) -> &Coord {
+        &self.canvas_cursor
+    }
+
+    fn next(mut self, e: Event) -> (Mode, AppOp) {
         match e.into() {
             Op::Enter => {
                 let app_op = if self.cmd == ":q" {
@@ -77,6 +80,13 @@ impl CmdMode {
             }
             Op::Nop => (self.into(), AppOp::Nop),
         }
+    }
+
+    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        // draw cursor
+        let Coord { x, y } = self.canvas_cursor;
+        buf.get_mut(area.x + x, area.y + y)
+            .set_bg(Color::Rgb(128, 128, 128));
     }
 }
 

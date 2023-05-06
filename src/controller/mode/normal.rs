@@ -1,9 +1,10 @@
-use super::{command::CmdMode, make_rect::MakeRectMode, Mode};
+use super::{command::CmdMode, make_rect::MakeRectMode, Mode, ModeIf};
 use crate::{
     controller::AppOp,
     util::{Coord, Direction},
 };
 use crossterm::event::{Event, KeyCode};
+use tui::style::Color;
 
 /// Operations for normal mode.
 enum Op {
@@ -45,12 +46,14 @@ impl NormalMode {
     pub fn new(canvas_cursor: Coord) -> Self {
         Self { canvas_cursor }
     }
+}
 
-    pub fn canvas_cursor(&self) -> &Coord {
+impl ModeIf for NormalMode {
+    fn canvas_cursor(&self) -> &Coord {
         &self.canvas_cursor
     }
 
-    pub fn next(mut self, e: Event) -> (Mode, AppOp) {
+    fn next(mut self, e: Event) -> (Mode, AppOp) {
         match e.into() {
             Op::EnterCmd => {
                 let cmd = CmdMode::new(self.canvas_cursor).into();
@@ -63,6 +66,13 @@ impl NormalMode {
             }
             Op::EnterMakeRect => (MakeRectMode::new(self.canvas_cursor).into(), AppOp::Nop),
         }
+    }
+
+    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        // draw cursor
+        let Coord { x, y } = self.canvas_cursor;
+        buf.get_mut(area.x + x, area.y + y)
+            .set_bg(Color::Rgb(128, 128, 128));
     }
 }
 

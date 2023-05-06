@@ -1,7 +1,4 @@
-use crate::{
-    canvas::{Canvas, CanvasWidget},
-    controller::mode::Mode,
-};
+use crate::{canvas::Canvas, controller::mode::Mode};
 use crossterm::{
     event, execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -37,8 +34,8 @@ impl App {
             )
             .split(f.size());
 
-        let cw = CanvasWidget::new(&self.canvas, self.mode.canvas_cursor());
-        f.render_widget(cw, chunks1[0]);
+        f.render_widget(&self.canvas, chunks1[0]);
+        f.render_widget(self.mode.canvas_modify_widget(), chunks1[0]);
         f.render_widget(&self.mode, chunks1[1]);
     }
 

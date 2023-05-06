@@ -15,6 +15,12 @@ mod command;
 mod make_rect;
 mod normal;
 
+trait ModeIf {
+    fn canvas_cursor(&self) -> &Coord;
+    fn next(self, e: Event) -> (Mode, AppOp);
+    fn modify_canvas_view(&self, _area: tui::layout::Rect, _buf: &mut tui::buffer::Buffer) {}
+}
+
 pub enum Mode {
     Norm(NormalMode),
     Cmd(CmdMode),
@@ -26,15 +32,24 @@ impl Mode {
         Self::Norm(NormalMode::new(Coord::new(0, 0)))
     }
 
-    pub fn canvas_cursor(&self) -> &Coord {
+    fn inner(&self) -> &dyn ModeIf {
         match self {
-            Mode::Norm(m) => m.canvas_cursor(),
-            Mode::Cmd(m) => m.canvas_cursor(),
-            Mode::MakeRect(m) => m.canvas_cursor(),
+            Mode::Norm(m) => m,
+            Mode::Cmd(m) => m,
+            Mode::MakeRect(m) => m,
         }
     }
 
+    pub fn canvas_modify_widget(&self) -> CanvasModifyWidget {
+        CanvasModifyWidget { mode: self.inner() }
+    }
+
+    pub fn canvas_cursor(&self) -> &Coord {
+        self.inner().canvas_cursor()
+    }
+
     pub fn trans(&mut self, e: Event) -> AppOp {
+        // TODO refact
         let mut old = Self::new();
         std::mem::swap(self, &mut old);
 
@@ -78,5 +93,15 @@ impl Widget for &Mode {
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false });
         msg.render(area, buf);
+    }
+}
+
+pub struct CanvasModifyWidget<'a> {
+    mode: &'a dyn ModeIf,
+}
+
+impl<'a> Widget for CanvasModifyWidget<'a> {
+    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        self.mode.modify_canvas_view(area, buf)
     }
 }
