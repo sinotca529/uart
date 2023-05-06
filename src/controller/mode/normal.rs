@@ -1,11 +1,16 @@
 use super::{command::CmdMode, Mode};
-use crate::{util::Coord, controller::AppOp};
+use crate::{
+    controller::AppOp,
+    util::{Coord, Direction},
+};
 use crossterm::event::{Event, KeyCode};
 
 /// Operations for normal mode.
 enum Op {
     /// Change to cmd mode.
     EnterCmd,
+    /// Move Cursor
+    MoveCursor(Direction),
     /// Do nothing.
     Nop,
 }
@@ -13,13 +18,17 @@ enum Op {
 impl From<Event> for Op {
     fn from(e: Event) -> Self {
         match e {
-            Event::Key(k) => {
-                if k.code == KeyCode::Char(':') {
-                    Op::EnterCmd
-                } else {
-                    Op::Nop
-                }
-            }
+            Event::Key(k) => match k.code {
+                KeyCode::Char(c) => match c {
+                    ':' => Op::EnterCmd,
+                    'h' => Op::MoveCursor(Direction::Left),
+                    'j' => Op::MoveCursor(Direction::Down),
+                    'k' => Op::MoveCursor(Direction::Up),
+                    'l' => Op::MoveCursor(Direction::Right),
+                    _ => Op::Nop,
+                },
+                _ => Op::Nop,
+            },
             _ => Op::Nop,
         }
     }
@@ -34,13 +43,21 @@ impl NormalMode {
         Self { canvas_cursor }
     }
 
-    pub fn next(self, e: Event) -> (Mode, AppOp) {
+    pub fn canvas_cursor(&self) -> &Coord {
+        &self.canvas_cursor
+    }
+
+    pub fn next(mut self, e: Event) -> (Mode, AppOp) {
         match e.into() {
             Op::EnterCmd => {
                 let cmd = CmdMode::new(self.canvas_cursor).into();
                 (cmd, AppOp::Nop)
             }
             Op::Nop => (self.into(), AppOp::Nop),
+            Op::MoveCursor(d) => {
+                self.canvas_cursor = self.canvas_cursor.adjacency(d);
+                (self.into(), AppOp::Nop)
+            }
         }
     }
 }

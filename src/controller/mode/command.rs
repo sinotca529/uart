@@ -1,7 +1,7 @@
 use crossterm::event::{Event, KeyCode};
 
 use super::{normal::NormalMode, Mode};
-use crate::{util::Coord, controller::AppOp};
+use crate::{controller::AppOp, util::Coord};
 
 /// Operations for command mode.
 enum Op {
@@ -40,6 +40,10 @@ impl CmdMode {
             canvas_cursor,
             cmd: ":".to_string(),
         }
+    }
+
+    pub fn canvas_cursor(&self) -> &Coord {
+        &self.canvas_cursor
     }
 
     pub fn cmd(&self) -> &String {

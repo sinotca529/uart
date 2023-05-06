@@ -24,6 +24,13 @@ impl Mode {
         Self::Norm(NormalMode::new(Coord::new(0, 0)))
     }
 
+    pub fn canvas_cursor(&self) -> &Coord {
+        match self {
+            Mode::Norm(m) => m.canvas_cursor(),
+            Mode::Cmd(m) => m.canvas_cursor(),
+        }
+    }
+
     pub fn trans(&mut self, e: Event) -> AppOp {
         let mut old = Self::new();
         std::mem::swap(self, &mut old);

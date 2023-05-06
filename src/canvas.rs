@@ -9,6 +9,7 @@ use crate::util::{make_area, Coord};
 use std::collections::HashMap;
 use tui::{
     layout::Alignment,
+    style::Color,
     text::Text,
     widgets::{Paragraph, Widget},
 };
@@ -37,9 +38,23 @@ impl Canvas {
     }
 }
 
-impl Widget for &Canvas {
+pub struct CanvasWidget<'a> {
+    canvas: &'a Canvas,
+    cursor_coord: &'a Coord,
+}
+
+impl<'a> CanvasWidget<'a> {
+    pub fn new(canvas: &'a Canvas, cursor_coord: &'a Coord) -> Self {
+        Self {
+            canvas,
+            cursor_coord,
+        }
+    }
+}
+
+impl<'a> Widget for CanvasWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        for (coord, shape) in self.shapes() {
+        for (coord, shape) in self.canvas.shapes() {
             let upper_left = Coord::new(area.x + coord.x, area.y + coord.y);
             let area = make_area(&upper_left, &shape.size());
 
@@ -47,5 +62,7 @@ impl Widget for &Canvas {
             let p = Paragraph::new(t).alignment(Alignment::Left);
             p.render(area, buf);
         }
+        let Coord { x, y } = &self.cursor_coord;
+        buf.get_mut(*x, *y).set_bg(Color::Rgb(128, 128, 128));
     }
 }
