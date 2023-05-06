@@ -2,13 +2,13 @@ use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Paragraph, Widget},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::{
-    canvas::shape::{text::Text, ShapeIf, ShapeWithCoord},
+    canvas::shape::{text::Text, ShapeWithCoord},
     controller::AppOp,
-    util::{make_area, Coord, Direction},
+    util::{Coord, Direction},
 };
 
 use super::{normal::NormalMode, Mode, ModeIf};
@@ -94,6 +94,18 @@ impl ModeIf for MakeTextMode {
         // draw text
         let text = Text::new(self.text.clone());
         ShapeWithCoord::new(&text, &self.start_coord).render(area, buf);
+    }
+
+    fn status_msg(&self) -> tui::widgets::Paragraph {
+        let t = tui::text::Text::raw("TEXT [Esc]Complete");
+        Paragraph::new(t)
+            .style(
+                Style::default()
+                    .fg(Color::Rgb(255, 255, 255))
+                    .bg(Color::Rgb(50, 50, 50)),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: false })
     }
 }
 
