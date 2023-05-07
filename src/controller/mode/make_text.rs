@@ -39,7 +39,6 @@ impl From<Event> for Op {
 }
 
 pub struct MakeTextMode {
-    canvas_cursor: Coord,
     start_coord: Coord,
     text: String,
 }
@@ -47,7 +46,6 @@ pub struct MakeTextMode {
 impl MakeTextMode {
     pub fn new(canvas_cursor: Coord) -> Self {
         Self {
-            canvas_cursor,
             start_coord: canvas_cursor,
             text: String::new(),
         }
@@ -55,51 +53,51 @@ impl MakeTextMode {
 }
 
 impl ModeIf for MakeTextMode {
-    fn canvas_cursor(&self) -> &Coord {
-        &self.canvas_cursor
-    }
-
-    fn next(mut self, e: Event) -> (Mode, AppOp) {
+    fn next(mut self, e: Event, mut canvas_cursor: Coord) -> (Mode, AppOp) {
         match e.into() {
             Op::Nop => (self.into(), AppOp::Nop),
             Op::MakeText => {
-                let mode = NormalMode::new(self.canvas_cursor).into();
+                let mode = NormalMode::new().into();
                 let op = AppOp::MakeShape(self.start_coord, Text::new(self.text.clone()).into());
                 (mode, op)
             }
             Op::AddChar(c) => {
                 self.text.push(c);
-                self.canvas_cursor.x += UnicodeWidthChar::width(c).unwrap() as u16;
-                (self.into(), AppOp::Nop)
+                canvas_cursor.x += UnicodeWidthChar::width(c).unwrap() as u16;
+                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
             }
             Op::Enter => {
                 self.text.push('\n');
-                self.canvas_cursor.y += 1;
-                self.canvas_cursor.x = self.start_coord.x;
-                (self.into(), AppOp::Nop)
+                canvas_cursor.y += 1;
+                canvas_cursor.x = self.start_coord.x;
+                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
             }
             Op::Backspace => {
                 let c = self.text.pop();
                 match c {
                     Some('\n') => {
-                        self.canvas_cursor.y -= 1;
-                        self.canvas_cursor.x +=
+                        canvas_cursor.y -= 1;
+                        canvas_cursor.x +=
                             UnicodeWidthStr::width(self.text.lines().last().unwrap_or("")) as u16;
                     }
                     Some(c) => {
-                        self.canvas_cursor.x -= UnicodeWidthChar::width(c).unwrap() as u16;
+                        canvas_cursor.x -= UnicodeWidthChar::width(c).unwrap() as u16;
                     }
                     _ => {}
                 }
-                (self.into(), AppOp::Nop)
+                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
             }
         }
     }
 
-    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn modify_canvas_view(
+        &self,
+        area: tui::layout::Rect,
+        buf: &mut tui::buffer::Buffer,
+        _: &Coord,
+    ) {
         let text = Text::new(self.text.clone());
         ShapeWithCoord::new(&text, &self.start_coord).render(area, buf);
-        self.render_cursor(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

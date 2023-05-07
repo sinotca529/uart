@@ -39,26 +39,24 @@ impl From<Event> for Op {
 }
 
 pub struct MakeRectMode {
-    canvas_cursor: Coord,
     start_coord: Coord,
 }
 
 impl MakeRectMode {
     pub fn new(canvas_cursor: Coord) -> Self {
         Self {
-            canvas_cursor,
             start_coord: canvas_cursor,
         }
     }
 
     /// Make rect
-    fn make_rect(&self) -> (Coord, Rect) {
-        let w = self.start_coord.x.abs_diff(self.canvas_cursor.x) + 1;
-        let h = self.start_coord.y.abs_diff(self.canvas_cursor.y) + 1;
+    fn make_rect(a: Coord, b: Coord) -> (Coord, Rect) {
+        let w = a.x.abs_diff(b.x) + 1;
+        let h = a.y.abs_diff(b.y) + 1;
         let rect = Rect::new(Size::new(w, h));
 
-        let x = self.start_coord.x.min(self.canvas_cursor.x);
-        let y = self.start_coord.y.min(self.canvas_cursor.y);
+        let x = a.x.min(b.x);
+        let y = a.y.min(b.y);
         let start = Coord::new(x, y);
 
         (start, rect)
@@ -66,30 +64,27 @@ impl MakeRectMode {
 }
 
 impl ModeIf for MakeRectMode {
-    fn canvas_cursor(&self) -> &Coord {
-        &self.canvas_cursor
-    }
-
-    fn next(mut self, e: Event) -> (Mode, AppOp) {
+    fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp) {
         match e.into() {
             Op::Nop => (self.into(), AppOp::Nop),
-            Op::MoveCursor(d) => {
-                self.canvas_cursor = self.canvas_cursor.adjacency(d);
-                (self.into(), AppOp::Nop)
-            }
+            Op::MoveCursor(d) => (self.into(), AppOp::MoveCanvasCursor(d)),
             Op::MakeRect => {
-                let (start, rect) = self.make_rect();
+                let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
                 let op = AppOp::MakeShape(start, rect.into());
-                let mode = NormalMode::new(self.canvas_cursor).into();
+                let mode = NormalMode::new().into();
                 (mode, op)
             }
         }
     }
 
-    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        let (start, rect) = self.make_rect();
+    fn modify_canvas_view(
+        &self,
+        area: tui::layout::Rect,
+        buf: &mut tui::buffer::Buffer,
+        canvas_cursor: &Coord,
+    ) {
+        let (start, rect) = Self::make_rect(self.start_coord, *canvas_cursor);
         ShapeWithCoord::new(&rect, &start).render(area, buf);
-        self.render_cursor(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

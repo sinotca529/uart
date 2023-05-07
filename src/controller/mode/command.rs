@@ -35,14 +35,12 @@ impl From<Event> for Op {
 }
 
 pub struct CmdMode {
-    canvas_cursor: Coord,
     cmd: String,
 }
 
 impl CmdMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
+    pub fn new() -> Self {
         Self {
-            canvas_cursor,
             cmd: ":".to_string(),
         }
     }
@@ -52,12 +50,14 @@ impl CmdMode {
     }
 }
 
-impl ModeIf for CmdMode {
-    fn canvas_cursor(&self) -> &Coord {
-        &self.canvas_cursor
+impl Default for CmdMode {
+    fn default() -> Self {
+        Self::new()
     }
+}
 
-    fn next(mut self, e: Event) -> (Mode, AppOp) {
+impl ModeIf for CmdMode {
+    fn next(mut self, e: Event, _: Coord) -> (Mode, AppOp) {
         match e.into() {
             Op::Enter => {
                 let app_op = if self.cmd == ":q" {
@@ -66,7 +66,7 @@ impl ModeIf for CmdMode {
                     AppOp::Nop
                 };
 
-                let next_mode = NormalMode::new(self.canvas_cursor).into();
+                let next_mode = NormalMode::new().into();
                 (next_mode, app_op)
             }
             Op::Char(c) => {
@@ -76,7 +76,7 @@ impl ModeIf for CmdMode {
             Op::BackSpace => {
                 self.cmd.pop();
                 let next_mode = if self.cmd.is_empty() {
-                    NormalMode::new(self.canvas_cursor).into()
+                    NormalMode::new().into()
                 } else {
                     self.into()
                 };
@@ -84,13 +84,6 @@ impl ModeIf for CmdMode {
             }
             Op::Nop => (self.into(), AppOp::Nop),
         }
-    }
-
-    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        // draw cursor
-        let Coord { x, y } = self.canvas_cursor;
-        buf.get_mut(area.x + x, area.y + y)
-            .set_bg(Color::Rgb(128, 128, 128));
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

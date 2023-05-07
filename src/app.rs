@@ -34,8 +34,11 @@ impl App {
             )
             .split(f.size());
 
-        f.render_widget(&self.canvas, chunks1[0]);
-        f.render_widget(self.mode.canvas_modify_widget(), chunks1[0]);
+        f.render_stateful_widget(&self.canvas, chunks1[0], &mut &self.mode);
+        f.render_widget(
+            self.mode.canvas_modify_widget(self.canvas.cursor()),
+            chunks1[0],
+        );
         f.render_widget(&self.mode, chunks1[1]);
     }
 
@@ -43,10 +46,14 @@ impl App {
         use crate::controller::AppOp::*;
         loop {
             terminal.draw(|f| self.render(f)).unwrap();
-            let op = self.mode.trans(event::read().unwrap());
+            let op = self
+                .mode
+                .trans(event::read().unwrap(), self.canvas.cursor());
             match op {
                 QuitApp => break,
                 MakeShape(c, s) => self.canvas.add_shape(c, s),
+                MoveCanvasCursor(d) => self.canvas.move_cursor(d),
+                SetCanvasCursor(c) => self.canvas.set_cursor(c),
                 Nop => {}
             }
         }

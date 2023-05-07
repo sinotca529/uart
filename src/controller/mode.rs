@@ -17,15 +17,16 @@ mod make_text;
 mod normal;
 
 trait ModeIf {
-    fn canvas_cursor(&self) -> &Coord;
-    fn next(self, e: Event) -> (Mode, AppOp);
-    fn modify_canvas_view(&self, _area: tui::layout::Rect, _buf: &mut tui::buffer::Buffer) {}
-    fn status_msg(&self) -> Paragraph;
-    fn render_cursor(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        let Coord { x, y } = self.canvas_cursor();
-        buf.get_mut(area.x + x, area.y + y)
-            .set_bg(Color::Rgb(128, 128, 128));
+    fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp);
+    fn modify_canvas_view(
+        &self,
+        _area: tui::layout::Rect,
+        _buf: &mut tui::buffer::Buffer,
+        _canvas_cursor: &Coord,
+    ) {
     }
+
+    fn status_msg(&self) -> Paragraph;
 }
 
 pub enum Mode {
@@ -37,27 +38,36 @@ pub enum Mode {
 
 impl Mode {
     pub fn new() -> Self {
-        Self::Norm(NormalMode::new(Coord::new(0, 0)))
+        Self::Norm(NormalMode::new())
     }
 
-    pub fn canvas_modify_widget(&self) -> CanvasModifyWidget {
-        CanvasModifyWidget { mode: self.into() }
+    pub fn canvas_modify_widget(&self, canvas_cursor: Coord) -> CanvasModifyWidget {
+        CanvasModifyWidget {
+            mode: self.into(),
+            canvas_cursor,
+        }
     }
 
-    pub fn trans(&mut self, e: Event) -> AppOp {
+    pub fn trans(&mut self, e: Event, canvas_cursor: Coord) -> AppOp {
         // TODO refact
         let mut old = Self::new();
         std::mem::swap(self, &mut old);
 
         let (next_mode, app_op) = match old {
-            Mode::Norm(m) => m.next(e),
-            Mode::Cmd(m) => m.next(e),
-            Mode::MakeRect(m) => m.next(e),
-            Mode::MakeText(m) => m.next(e),
+            Mode::Norm(m) => m.next(e, canvas_cursor),
+            Mode::Cmd(m) => m.next(e, canvas_cursor),
+            Mode::MakeRect(m) => m.next(e, canvas_cursor),
+            Mode::MakeText(m) => m.next(e, canvas_cursor),
         };
 
         *self = next_mode;
         app_op
+    }
+}
+
+impl Default for Mode {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -73,11 +83,12 @@ impl Widget for &Mode {
 
 pub struct CanvasModifyWidget<'a> {
     mode: &'a dyn ModeIf,
+    canvas_cursor: Coord,
 }
 
 impl<'a> Widget for CanvasModifyWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        self.mode.modify_canvas_view(area, buf)
+        self.mode.modify_canvas_view(area, buf, &self.canvas_cursor)
     }
 }
 

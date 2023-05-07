@@ -45,39 +45,32 @@ impl From<Event> for Op {
     }
 }
 
-pub struct NormalMode {
-    canvas_cursor: Coord,
-}
+pub struct NormalMode;
 
 impl NormalMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
-        Self { canvas_cursor }
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for NormalMode {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl ModeIf for NormalMode {
-    fn canvas_cursor(&self) -> &Coord {
-        &self.canvas_cursor
-    }
-
-    fn next(mut self, e: Event) -> (Mode, AppOp) {
+    fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp) {
         match e.into() {
             Op::EnterCmd => {
-                let cmd = CmdMode::new(self.canvas_cursor).into();
+                let cmd = CmdMode::new().into();
                 (cmd, AppOp::Nop)
             }
             Op::Nop => (self.into(), AppOp::Nop),
-            Op::MoveCursor(d) => {
-                self.canvas_cursor = self.canvas_cursor.adjacency(d);
-                (self.into(), AppOp::Nop)
-            }
-            Op::EnterMakeRect => (MakeRectMode::new(self.canvas_cursor).into(), AppOp::Nop),
-            Op::EnterMakeText => (MakeTextMode::new(self.canvas_cursor).into(), AppOp::Nop),
+            Op::MoveCursor(d) => (self.into(), AppOp::MoveCanvasCursor(d)),
+            Op::EnterMakeRect => (MakeRectMode::new(canvas_cursor).into(), AppOp::Nop),
+            Op::EnterMakeText => (MakeTextMode::new(canvas_cursor).into(), AppOp::Nop),
         }
-    }
-
-    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        self.render_cursor(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {
