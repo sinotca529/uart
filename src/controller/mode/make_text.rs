@@ -6,7 +6,7 @@ use tui::{
 };
 
 use crate::{
-    canvas::shape::{text::Text, ShapeWithCoord},
+    canvas::shape::{text::Text, Shape},
     controller::AppOp,
     util::Coord,
 };
@@ -57,7 +57,7 @@ impl ModeIf for MakeTextMode {
         match e.into() {
             Op::Nop => (self.into(), AppOp::Nop),
             Op::MakeText => {
-                let mode = NormalMode::new().into();
+                let mode = NormalMode.into();
                 let op = AppOp::MakeShape(self.start_coord, Text::new(self.text.clone()).into());
                 (mode, op)
             }
@@ -90,14 +90,10 @@ impl ModeIf for MakeTextMode {
         }
     }
 
-    fn modify_canvas_view(
-        &self,
-        area: tui::layout::Rect,
-        buf: &mut tui::buffer::Buffer,
-        _: &Coord,
-    ) {
+    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer, _: Coord) {
         let text = Text::new(self.text.clone());
-        ShapeWithCoord::new(&text, &self.start_coord).render(area, buf);
+        let s: Shape = text.into();
+        s.renderer(self.start_coord).render(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

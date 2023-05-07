@@ -6,7 +6,7 @@ use tui::{
 };
 
 use crate::{
-    canvas::shape::{rect::Rect, ShapeWithCoord},
+    canvas::shape::{rect::Rect, Shape},
     controller::AppOp,
     util::{Coord, Direction, Size},
 };
@@ -71,7 +71,7 @@ impl ModeIf for MakeRectMode {
             Op::MakeRect => {
                 let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
                 let op = AppOp::MakeShape(start, rect.into());
-                let mode = NormalMode::new().into();
+                let mode = NormalMode.into();
                 (mode, op)
             }
         }
@@ -81,10 +81,11 @@ impl ModeIf for MakeRectMode {
         &self,
         area: tui::layout::Rect,
         buf: &mut tui::buffer::Buffer,
-        canvas_cursor: &Coord,
+        canvas_cursor: Coord,
     ) {
-        let (start, rect) = Self::make_rect(self.start_coord, *canvas_cursor);
-        ShapeWithCoord::new(&rect, &start).render(area, buf);
+        let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
+        let s: Shape = rect.into();
+        s.renderer(start).render(area, buf);
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

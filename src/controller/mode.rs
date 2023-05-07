@@ -7,7 +7,7 @@ use tui::{
 use self::{
     command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, normal::NormalMode,
 };
-use crate::util::Coord;
+use crate::util::{Coord, InstantWidget};
 
 use super::AppOp;
 
@@ -22,7 +22,7 @@ trait ModeIf {
         &self,
         _area: tui::layout::Rect,
         _buf: &mut tui::buffer::Buffer,
-        _canvas_cursor: &Coord,
+        _canvas_cursor: Coord,
     ) {
     }
 
@@ -41,11 +41,13 @@ impl Mode {
         Self::Norm(NormalMode::new())
     }
 
-    pub fn canvas_modify_widget(&self, canvas_cursor: Coord) -> CanvasModifyWidget {
-        CanvasModifyWidget {
-            mode: self.into(),
-            canvas_cursor,
-        }
+    pub fn canvas_modifier(&self, canvas_cursor: Coord) -> impl Widget + '_ {
+        InstantWidget::new(
+            move |area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
+                let m: &dyn ModeIf = self.into();
+                m.modify_canvas_view(area, buf, canvas_cursor);
+            },
+        )
     }
 
     pub fn trans(&mut self, e: Event, canvas_cursor: Coord) -> AppOp {
@@ -78,17 +80,6 @@ impl Widget for &Mode {
             .style(Style::default().bg(Color::Rgb(50, 50, 50)));
         let m: &dyn ModeIf = self.into();
         m.status_msg().block(cmd_line).render(area, buf);
-    }
-}
-
-pub struct CanvasModifyWidget<'a> {
-    mode: &'a dyn ModeIf,
-    canvas_cursor: Coord,
-}
-
-impl<'a> Widget for CanvasModifyWidget<'a> {
-    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        self.mode.modify_canvas_view(area, buf, &self.canvas_cursor)
     }
 }
 

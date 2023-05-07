@@ -48,3 +48,28 @@ pub enum Direction {
 pub fn make_area(coord: &Coord, size: &Size) -> tui::layout::Rect {
     tui::layout::Rect::new(coord.x, coord.y, size.width, size.height)
 }
+
+pub struct InstantWidget<F>
+where
+    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+{
+    renderer: F,
+}
+
+impl<F> InstantWidget<F>
+where
+    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+{
+    pub fn new(renderer: F) -> Self {
+        Self { renderer }
+    }
+}
+
+impl<F> tui::widgets::Widget for InstantWidget<F>
+where
+    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+{
+    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        (self.renderer)(area, buf);
+    }
+}

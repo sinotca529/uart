@@ -35,10 +35,6 @@ impl App {
             .split(f.size());
 
         f.render_stateful_widget(&self.canvas, chunks1[0], &mut &self.mode);
-        f.render_widget(
-            self.mode.canvas_modify_widget(self.canvas.cursor()),
-            chunks1[0],
-        );
         f.render_widget(&self.mode, chunks1[1]);
     }
 

@@ -2,7 +2,7 @@ pub mod shape;
 mod shape_id;
 
 use self::{
-    shape::{Shape, ShapeWithCoord},
+    shape::Shape,
     shape_id::{Id, IdGenerator},
 };
 use crate::controller::mode::Mode;
@@ -69,11 +69,11 @@ impl<'a> StatefulWidget for &'a Canvas {
     ) {
         // Render shapes
         for (coord, shape) in self.shapes() {
-            ShapeWithCoord::new(shape.into(), coord).render(area, buf);
+            shape.renderer(*coord).render(area, buf);
         }
 
         // Render mode specific objects
-        state.canvas_modify_widget(self.cursor).render(area, buf);
+        state.canvas_modifier(self.cursor).render(area, buf);
 
         // Render cursor
         buf.get_mut(area.x + self.cursor.x, area.y + self.cursor.y)
