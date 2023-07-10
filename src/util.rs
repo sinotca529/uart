@@ -17,11 +17,41 @@ impl Coord {
             Direction::Down => Self::new(self.x, self.y.saturating_add(1)),
         }
     }
+
+    pub fn offset(&self, base: Coord) -> Offset {
+        Offset::new(self.x as i16 - base.x as i16, self.y as i16 - base.y as i16)
+    }
 }
 
 impl Default for Coord {
     fn default() -> Self {
-        Coord::new(0, 0)
+        Self::new(0, 0)
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+pub struct Offset {
+    pub x: i16,
+    pub y: i16,
+}
+
+impl Offset {
+    pub fn new(x: i16, y: i16) -> Self {
+        Self { x, y }
+    }
+}
+
+impl Default for Offset {
+    fn default() -> Self {
+        Self::new(0, 0)
+    }
+}
+
+impl std::ops::Sub for Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(self.x + rhs.x, self.y + rhs.y)
     }
 }
 
@@ -47,4 +77,29 @@ pub enum Direction {
 
 pub fn make_area(coord: &Coord, size: &Size) -> tui::layout::Rect {
     tui::layout::Rect::new(coord.x, coord.y, size.width, size.height)
+}
+
+pub struct InstantWidget<F>
+where
+    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+{
+    renderer: F,
+}
+
+impl<F> InstantWidget<F>
+where
+    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+{
+    pub fn new(renderer: F) -> Self {
+        Self { renderer }
+    }
+}
+
+impl<F> tui::widgets::Widget for InstantWidget<F>
+where
+    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+{
+    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        (self.renderer)(area, buf);
+    }
 }
