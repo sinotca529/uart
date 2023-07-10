@@ -17,11 +17,41 @@ impl Coord {
             Direction::Down => Self::new(self.x, self.y.saturating_add(1)),
         }
     }
+
+    pub fn offset(&self, base: Coord) -> Offset {
+        Offset::new(self.x as i16 - base.x as i16, self.y as i16 - base.y as i16)
+    }
 }
 
 impl Default for Coord {
     fn default() -> Self {
-        Coord::new(0, 0)
+        Self::new(0, 0)
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+pub struct Offset {
+    pub x: i16,
+    pub y: i16,
+}
+
+impl Offset {
+    pub fn new(x: i16, y: i16) -> Self {
+        Self { x, y }
+    }
+}
+
+impl Default for Offset {
+    fn default() -> Self {
+        Self::new(0, 0)
+    }
+}
+
+impl std::ops::Sub for Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(self.x + rhs.x, self.y + rhs.y)
     }
 }
 

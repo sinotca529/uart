@@ -2,7 +2,7 @@ use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Wrap},
 };
 
 use crate::{
@@ -90,10 +90,10 @@ impl ModeIf for MakeTextMode {
         }
     }
 
-    fn modify_canvas_view(&self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer, _: Coord) {
+    fn additional_shapes(&self, _: Coord) -> Vec<(Coord, Shape)> {
         let text = Text::new(self.text.clone());
         let s: Shape = text.into();
-        s.renderer(self.start_coord).render(area, buf);
+        vec![(self.start_coord, s)]
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

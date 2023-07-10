@@ -2,7 +2,7 @@ use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Wrap},
 };
 
 use crate::{
@@ -77,15 +77,9 @@ impl ModeIf for MakeRectMode {
         }
     }
 
-    fn modify_canvas_view(
-        &self,
-        area: tui::layout::Rect,
-        buf: &mut tui::buffer::Buffer,
-        canvas_cursor: Coord,
-    ) {
+    fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
         let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
-        let s: Shape = rect.into();
-        s.renderer(start).render(area, buf);
+        vec![(start, rect.into())]
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

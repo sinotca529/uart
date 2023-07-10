@@ -7,7 +7,7 @@ use tui::{
 use self::{
     command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, normal::NormalMode,
 };
-use crate::util::{Coord, InstantWidget};
+use crate::{canvas::shape::Shape, util::Coord};
 
 use super::AppOp;
 
@@ -18,14 +18,9 @@ mod normal;
 
 trait ModeIf {
     fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp);
-    fn modify_canvas_view(
-        &self,
-        _area: tui::layout::Rect,
-        _buf: &mut tui::buffer::Buffer,
-        _canvas_cursor: Coord,
-    ) {
+    fn additional_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
+        vec![]
     }
-
     fn status_msg(&self) -> Paragraph;
 }
 
@@ -41,28 +36,23 @@ impl Mode {
         Self::Norm(NormalMode::new())
     }
 
-    pub fn canvas_modifier(&self, canvas_cursor: Coord) -> impl Widget + '_ {
-        InstantWidget::new(
-            move |area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
-                let m: &dyn ModeIf = self.into();
-                m.modify_canvas_view(area, buf, canvas_cursor);
-            },
-        )
+    pub fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
+        let m: &dyn ModeIf = self.into();
+        m.additional_shapes(canvas_cursor)
     }
 
     pub fn trans(&mut self, e: Event, canvas_cursor: Coord) -> AppOp {
         // TODO refact
+        let app_op;
         let mut old = Self::new();
         std::mem::swap(self, &mut old);
 
-        let (next_mode, app_op) = match old {
+        (*self, app_op) = match old {
             Mode::Norm(m) => m.next(e, canvas_cursor),
             Mode::Cmd(m) => m.next(e, canvas_cursor),
             Mode::MakeRect(m) => m.next(e, canvas_cursor),
             Mode::MakeText(m) => m.next(e, canvas_cursor),
         };
-
-        *self = next_mode;
         app_op
     }
 }
