@@ -1,5 +1,6 @@
 use crate::{
     canvas::{CanvasHandler, RenderState},
+    controller::mode::normal::NormalMode,
     controller::mode::Mode,
     util::Size,
 };
@@ -16,14 +17,14 @@ use tui::{
 /// The application
 pub struct App {
     canvas_handler: CanvasHandler,
-    mode: Mode,
+    mode: Box<dyn Mode>,
 }
 
 impl App {
     pub fn new() -> Self {
         App {
             canvas_handler: CanvasHandler::default(),
-            mode: Mode::new(),
+            mode: Box::new(NormalMode),
         }
     }
 
@@ -40,7 +41,7 @@ impl App {
             .split(f.size());
 
         let canvas_size = Size::new(chunks1[0].width, chunks1[0].height);
-        let mut state = RenderState::new(&self.mode, canvas_size);
+        let mut state = RenderState::new(self.mode.as_ref(), canvas_size);
         f.render_stateful_widget(&mut self.canvas_handler, chunks1[0], &mut state);
         f.render_widget(&self.mode, chunks1[1]);
     }
@@ -50,9 +51,12 @@ impl App {
         use crate::controller::AppOp::*;
         loop {
             terminal.draw(|f| self.render(f)).unwrap();
-            let op = self
-                .mode
-                .trans(event::read().unwrap(), self.canvas_handler.canvas.cursor());
+            let event = event::read().unwrap();
+            let cursor_coord = self.canvas_handler.canvas.cursor();
+            let op;
+            let current_mode = std::mem::take(&mut self.mode);
+            (self.mode, op) = current_mode.next(event, cursor_coord);
+
             match op {
                 QuitApp => break,
                 MakeShape(c, s) => self.canvas_handler.canvas.add_shape(c, s),

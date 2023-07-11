@@ -11,7 +11,7 @@ use crate::{
     util::Coord,
 };
 
-use super::{normal::NormalMode, Mode, ModeIf};
+use super::{normal::NormalMode, Mode};
 
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
@@ -52,12 +52,12 @@ impl MakeTextMode {
     }
 }
 
-impl ModeIf for MakeTextMode {
-    fn next(mut self, e: Event, mut canvas_cursor: Coord) -> (Mode, AppOp) {
+impl Mode for MakeTextMode {
+    fn next(mut self: Box<Self>, e: Event, mut canvas_cursor: Coord) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
-            Op::Nop => (self.into(), AppOp::Nop),
+            Op::Nop => (self, AppOp::Nop),
             Op::MakeText => {
-                let mode = NormalMode.into();
+                let mode = Box::new(NormalMode);
                 let text = Box::new(Text::new(self.text.clone()));
                 let op = AppOp::MakeShape(self.start_coord, text);
                 (mode, op)
@@ -65,13 +65,13 @@ impl ModeIf for MakeTextMode {
             Op::AddChar(c) => {
                 self.text.push(c);
                 canvas_cursor.x += UnicodeWidthChar::width(c).unwrap() as u16;
-                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
+                (self, AppOp::SetCanvasCursor(canvas_cursor))
             }
             Op::Enter => {
                 self.text.push('\n');
                 canvas_cursor.y += 1;
                 canvas_cursor.x = self.start_coord.x;
-                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
+                (self, AppOp::SetCanvasCursor(canvas_cursor))
             }
             Op::Backspace => {
                 let c = self.text.pop();
@@ -86,7 +86,7 @@ impl ModeIf for MakeTextMode {
                     }
                     _ => {}
                 }
-                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
+                (self, AppOp::SetCanvasCursor(canvas_cursor))
             }
         }
     }
@@ -106,11 +106,5 @@ impl ModeIf for MakeTextMode {
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false })
-    }
-}
-
-impl From<MakeTextMode> for Mode {
-    fn from(val: MakeTextMode) -> Self {
-        Mode::MakeText(val)
     }
 }

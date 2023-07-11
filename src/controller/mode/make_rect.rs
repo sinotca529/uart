@@ -11,7 +11,7 @@ use crate::{
     util::{Coord, Direction, Size},
 };
 
-use super::{normal::NormalMode, Mode, ModeIf};
+use super::{normal::NormalMode, Mode};
 
 enum Op {
     MoveCursor(Direction),
@@ -63,15 +63,15 @@ impl MakeRectMode {
     }
 }
 
-impl ModeIf for MakeRectMode {
-    fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp) {
+impl Mode for MakeRectMode {
+    fn next(self: Box<Self>, e: Event, canvas_cursor: Coord) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
-            Op::Nop => (self.into(), AppOp::Nop),
-            Op::MoveCursor(d) => (self.into(), AppOp::MoveCanvasCursor(d)),
+            Op::Nop => (self, AppOp::Nop),
+            Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::MakeRect => {
                 let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
                 let op = AppOp::MakeShape(start, Box::new(rect));
-                let mode = NormalMode.into();
+                let mode = Box::new(NormalMode);
                 (mode, op)
             }
         }
@@ -92,11 +92,5 @@ impl ModeIf for MakeRectMode {
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false })
-    }
-}
-
-impl From<MakeRectMode> for Mode {
-    fn from(val: MakeRectMode) -> Self {
-        Mode::MakeRect(val)
     }
 }

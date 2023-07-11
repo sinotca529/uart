@@ -62,12 +62,12 @@ pub struct CanvasHandler {
 }
 
 pub struct RenderState<'a> {
-    mode: &'a Mode,
+    mode: &'a dyn Mode,
     canvas_size: Size,
 }
 
 impl<'a> RenderState<'a> {
-    pub fn new(mode: &'a Mode, canvas_size: Size) -> Self {
+    pub fn new(mode: &'a dyn Mode, canvas_size: Size) -> Self {
         Self { mode, canvas_size }
     }
 }

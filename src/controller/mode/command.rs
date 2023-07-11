@@ -5,7 +5,7 @@ use tui::{
     widgets::{Paragraph, Wrap},
 };
 
-use super::{normal::NormalMode, Mode, ModeIf};
+use super::{normal::NormalMode, Mode};
 use crate::{controller::AppOp, util::Coord};
 
 /// Operations for command mode.
@@ -44,10 +44,6 @@ impl CmdMode {
             cmd: ":".to_string(),
         }
     }
-
-    pub fn cmd(&self) -> &String {
-        &self.cmd
-    }
 }
 
 impl Default for CmdMode {
@@ -56,8 +52,8 @@ impl Default for CmdMode {
     }
 }
 
-impl ModeIf for CmdMode {
-    fn next(mut self, e: Event, _: Coord) -> (Mode, AppOp) {
+impl Mode for CmdMode {
+    fn next(mut self: Box<Self>, e: Event, _: Coord) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Enter => {
                 let app_op = if self.cmd == ":q" {
@@ -66,23 +62,22 @@ impl ModeIf for CmdMode {
                     AppOp::Nop
                 };
 
-                let next_mode = NormalMode::new().into();
+                let next_mode = Box::new(NormalMode::new());
                 (next_mode, app_op)
             }
             Op::Char(c) => {
                 self.cmd.push(c);
-                (self.into(), AppOp::Nop)
+                (self, AppOp::Nop)
             }
             Op::BackSpace => {
                 self.cmd.pop();
-                let next_mode = if self.cmd.is_empty() {
-                    NormalMode::new().into()
+                if self.cmd.is_empty() {
+                    (Box::new(NormalMode::new()), AppOp::Nop)
                 } else {
-                    self.into()
-                };
-                (next_mode, AppOp::Nop)
+                    (self, AppOp::Nop)
+                }
             }
-            Op::Nop => (self.into(), AppOp::Nop),
+            Op::Nop => (self, AppOp::Nop),
         }
     }
 
@@ -96,11 +91,5 @@ impl ModeIf for CmdMode {
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false })
-    }
-}
-
-impl From<CmdMode> for Mode {
-    fn from(val: CmdMode) -> Self {
-        Mode::Cmd(val)
     }
 }
