@@ -70,16 +70,16 @@ impl ModeIf for MakeRectMode {
             Op::MoveCursor(d) => (self.into(), AppOp::MoveCanvasCursor(d)),
             Op::MakeRect => {
                 let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
-                let op = AppOp::MakeShape(start, rect.into());
+                let op = AppOp::MakeShape(start, Box::new(rect));
                 let mode = NormalMode.into();
                 (mode, op)
             }
         }
     }
 
-    fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
+    fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
-        vec![(start, rect.into())]
+        vec![(start, Box::new(rect))]
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

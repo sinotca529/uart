@@ -8,14 +8,11 @@ use self::{
 use crate::util::{Coord, Direction};
 use crate::{controller::mode::Mode, util::Size};
 use std::collections::BTreeMap;
-use tui::{
-    style::Color,
-    widgets::{StatefulWidget, Widget},
-};
+use tui::{style::Color, widgets::StatefulWidget};
 
 pub struct Canvas {
     sig: IdGenerator,
-    shapes: BTreeMap<Id, (Coord, Shape)>,
+    shapes: BTreeMap<Id, (Coord, Box<dyn Shape>)>,
     cursor: Coord,
 }
 
@@ -41,13 +38,13 @@ impl Canvas {
         self.cursor = c;
     }
 
-    pub fn add_shape(&mut self, coord: Coord, shape: Shape) {
+    pub fn add_shape(&mut self, coord: Coord, shape: Box<dyn Shape>) {
         let id = self.sig.gen();
         let old = self.shapes.insert(id, (coord, shape));
-        assert_eq!(old, None);
+        assert!(old.is_none());
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &(Coord, Shape)> {
+    pub fn shapes(&self) -> impl Iterator<Item = &(Coord, Box<dyn Shape>)> {
         self.shapes.iter().map(|e| e.1)
     }
 }
@@ -113,12 +110,12 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
 
         // Render shapes
         for (coord, shape) in canvas.shapes() {
-            shape.renderer(coord.offset(offset)).render(area, buf);
+            shape.render(coord.offset(offset), area, buf);
         }
 
         // Render mode specific objects
         for (coord, shape) in state.mode.additional_shapes(canvas.cursor) {
-            shape.renderer(coord.offset(offset)).render(area, buf);
+            shape.render(coord.offset(offset), area, buf);
         }
 
         // Render cursor

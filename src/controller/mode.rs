@@ -18,7 +18,7 @@ mod normal;
 
 trait ModeIf {
     fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp);
-    fn additional_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
+    fn additional_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         vec![]
     }
     fn status_msg(&self) -> Paragraph;
@@ -36,7 +36,7 @@ impl Mode {
         Self::Norm(NormalMode::new())
     }
 
-    pub fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
+    pub fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         let m: &dyn ModeIf = self.into();
         m.additional_shapes(canvas_cursor)
     }

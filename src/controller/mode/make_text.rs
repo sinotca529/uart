@@ -58,7 +58,8 @@ impl ModeIf for MakeTextMode {
             Op::Nop => (self.into(), AppOp::Nop),
             Op::MakeText => {
                 let mode = NormalMode.into();
-                let op = AppOp::MakeShape(self.start_coord, Text::new(self.text.clone()).into());
+                let text = Box::new(Text::new(self.text.clone()));
+                let op = AppOp::MakeShape(self.start_coord, text);
                 (mode, op)
             }
             Op::AddChar(c) => {
@@ -90,10 +91,9 @@ impl ModeIf for MakeTextMode {
         }
     }
 
-    fn additional_shapes(&self, _: Coord) -> Vec<(Coord, Shape)> {
+    fn additional_shapes(&self, _: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         let text = Text::new(self.text.clone());
-        let s: Shape = text.into();
-        vec![(self.start_coord, s)]
+        vec![(self.start_coord, Box::new(text))]
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {

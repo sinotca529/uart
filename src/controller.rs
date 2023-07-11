@@ -7,7 +7,7 @@ pub mod mode;
 
 /// Operations for app.
 pub enum AppOp {
-    MakeShape(Coord, Shape),
+    MakeShape(Coord, Box<dyn Shape>),
     MoveCanvasCursor(Direction),
     SetCanvasCursor(Coord),
     QuitApp,
