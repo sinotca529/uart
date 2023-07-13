@@ -1,5 +1,4 @@
 pub mod rect;
-pub mod shape_id;
 pub mod style;
 pub mod text;
 

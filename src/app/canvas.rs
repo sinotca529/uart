@@ -1,20 +1,20 @@
 pub mod cursor;
 
 use self::cursor::Cursor;
-use super::{
-    mode::Mode,
-    shape::{
-        shape_id::{Id, IdGenerator},
-        Shape,
-    },
-};
-use crate::util::{Size, UCoord};
+use super::{mode::Mode, shape::Shape};
+use crate::util::{Id, IdGenerator, Size, UCoord};
 use std::collections::BTreeMap;
 use tui::{style::Color, widgets::StatefulWidget};
 
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
+enum ShapeTag {}
+type ShapeId = Id<ShapeTag>;
+type ShapeIdGen = IdGenerator<ShapeTag>;
+
+/// Canvas to put shapes.
 pub struct Canvas {
-    sig: IdGenerator,
-    shapes: BTreeMap<Id, (UCoord, Box<dyn Shape>)>,
+    sig: ShapeIdGen,
+    shapes: BTreeMap<ShapeId, (UCoord, Box<dyn Shape>)>,
     cursor: Cursor,
 }
 
@@ -31,6 +31,8 @@ impl Canvas {
         &mut self.cursor
     }
 
+    /// Add new shape to canvas.
+    /// `coord` is the coord of upper-left corner.
     pub fn add_shape(&mut self, coord: UCoord, shape: Box<dyn Shape>) {
         let id = self.sig.gen();
         let old = self.shapes.insert(id, (coord, shape));
@@ -101,7 +103,7 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
             UCoord::new(x, y)
         };
 
-        // Render shapes
+        // Render shapes (id is used as z-index)
         for (coord, shape) in canvas.shapes() {
             shape.render(coord.offset(offset), area, buf);
         }
