@@ -1,12 +1,14 @@
-pub mod shape;
-mod shape_id;
+pub mod cursor;
 
-use self::{
-    shape::Shape,
-    shape_id::{Id, IdGenerator},
+use self::cursor::Cursor;
+use super::{
+    mode::Mode,
+    shape::{
+        shape_id::{Id, IdGenerator},
+        Shape,
+    },
 };
-use crate::{controller::mode::Mode, util::Size};
-use crate::{cursor::Cursor, util::UCoord};
+use crate::util::{Size, UCoord};
 use std::collections::BTreeMap;
 use tui::{style::Color, widgets::StatefulWidget};
 

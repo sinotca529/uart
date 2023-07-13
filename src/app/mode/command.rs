@@ -1,12 +1,11 @@
+use super::{normal::NormalMode, Mode};
+use crate::app::{canvas::cursor::Cursor, AppOp};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
 };
-
-use super::{normal::NormalMode, Mode};
-use crate::{controller::AppOp, cursor::Cursor};
 
 /// Operations for command mode.
 enum Op {

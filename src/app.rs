@@ -1,8 +1,13 @@
-use crate::{
+mod canvas;
+mod mode;
+mod shape;
+
+use self::{
     canvas::{CanvasHandler, RenderState},
-    controller::mode::ModeHandler,
-    util::Size,
+    mode::ModeHandler,
+    shape::Shape,
 };
+use crate::util::{Size, UCoord};
 use crossterm::{
     event, execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -12,6 +17,14 @@ use tui::{
     layout::{Constraint, Direction, Layout},
     Frame, Terminal,
 };
+
+pub enum AppOp {
+    MakeShape(UCoord, Box<dyn Shape>),
+    MoveCanvasCursor(crate::util::Direction),
+    SetCanvasCursor(UCoord),
+    QuitApp,
+    Nop,
+}
 
 /// The application
 pub struct App {
@@ -47,7 +60,7 @@ impl App {
 
     /// Main loop
     fn main_loop(&mut self, terminal: &mut Terminal<impl Backend>) {
-        use crate::controller::AppOp::*;
+        use AppOp::*;
         loop {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();

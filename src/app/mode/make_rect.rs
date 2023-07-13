@@ -1,15 +1,16 @@
+use crate::{
+    app::{
+        canvas::cursor::Cursor,
+        shape::{rect::Rect, Shape},
+        AppOp,
+    },
+    util::{Direction, Size, UCoord},
+};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
-};
-
-use crate::{
-    canvas::shape::{rect::Rect, Shape},
-    controller::AppOp,
-    cursor::Cursor,
-    util::{Direction, Size, UCoord},
 };
 
 use super::{normal::NormalMode, Mode};

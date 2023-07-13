@@ -1,7 +1,9 @@
-use crate::util::{make_area, ICoord, Size, UCoord};
 pub mod rect;
+pub mod shape_id;
 pub mod style;
 pub mod text;
+
+use crate::util::{make_area, ICoord, Size, UCoord};
 use tui::{
     layout::Alignment,
     widgets::{Paragraph, Widget},

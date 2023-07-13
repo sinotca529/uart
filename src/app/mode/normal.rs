@@ -1,5 +1,8 @@
 use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode};
-use crate::{controller::AppOp, cursor::Cursor, util::Direction};
+use crate::{
+    app::{canvas::cursor::Cursor, AppOp},
+    util::Direction,
+};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,

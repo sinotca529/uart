@@ -1,16 +1,16 @@
+mod command;
+mod make_rect;
+mod make_text;
+mod normal;
+
 use self::normal::NormalMode;
-use super::AppOp;
-use crate::{canvas::shape::Shape, cursor::Cursor, util::UCoord};
+use super::{canvas::cursor::Cursor, shape::Shape, AppOp};
+use crate::util::UCoord;
 use crossterm::event::Event;
 use tui::{
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Widget},
 };
-
-mod command;
-mod make_rect;
-mod make_text;
-mod normal;
 
 pub trait Mode {
     fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp);
