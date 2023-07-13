@@ -46,6 +46,7 @@ pub trait Shape: ToString {
                 if offset.x < 0 {
                     let mut tmp_off = offset.x;
                     while tmp_off < 0 {
+                        // FIXME : something wrong with this unwrap.
                         let c = chars.next().unwrap();
                         tmp_off += UnicodeWidthChar::width(c).unwrap() as i16;
                     }
