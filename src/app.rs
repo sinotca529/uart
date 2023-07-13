@@ -1,7 +1,6 @@
 use crate::{
     canvas::{CanvasHandler, RenderState},
-    controller::mode::normal::NormalMode,
-    controller::mode::Mode,
+    controller::mode::ModeHandler,
     util::Size,
 };
 use crossterm::{
@@ -17,14 +16,14 @@ use tui::{
 /// The application
 pub struct App {
     canvas_handler: CanvasHandler,
-    mode: Box<dyn Mode>,
+    mode: ModeHandler,
 }
 
 impl App {
     pub fn new() -> Self {
         App {
             canvas_handler: CanvasHandler::default(),
-            mode: Box::new(NormalMode),
+            mode: ModeHandler::default(),
         }
     }
 
@@ -41,9 +40,9 @@ impl App {
             .split(f.size());
 
         let canvas_size = Size::new(chunks1[0].width, chunks1[0].height);
-        let mut state = RenderState::new(self.mode.as_ref(), canvas_size);
+        let mut state = RenderState::new(self.mode.get(), canvas_size);
         f.render_stateful_widget(&mut self.canvas_handler, chunks1[0], &mut state);
-        f.render_widget(&self.mode, chunks1[1]);
+        f.render_widget(self.mode.get(), chunks1[1]);
     }
 
     /// Main loop
@@ -53,9 +52,7 @@ impl App {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
             let cursor_coord = self.canvas_handler.canvas.cursor();
-            let op;
-            let current_mode = std::mem::take(&mut self.mode);
-            (self.mode, op) = current_mode.next(event, cursor_coord);
+            let op = self.mode.process_event(event, cursor_coord);
 
             match op {
                 QuitApp => break,
@@ -83,5 +80,11 @@ impl App {
         disable_raw_mode().unwrap();
         execute!(terminal.backend_mut(), LeaveAlternateScreen,).unwrap();
         terminal.show_cursor().unwrap();
+    }
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
     }
 }

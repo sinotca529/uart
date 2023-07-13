@@ -1,5 +1,4 @@
 use self::normal::NormalMode;
-
 use super::AppOp;
 use crate::{canvas::shape::Shape, util::Coord};
 use crossterm::event::Event;
@@ -11,7 +10,7 @@ use tui::{
 mod command;
 mod make_rect;
 mod make_text;
-pub mod normal;
+mod normal;
 
 pub trait Mode {
     fn next(self: Box<Self>, e: Event, canvas_cursor: Coord) -> (Box<dyn Mode>, AppOp);
@@ -21,17 +20,34 @@ pub trait Mode {
     fn status_msg(&self) -> Paragraph;
 }
 
-impl Default for Box<dyn Mode> {
-    fn default() -> Self {
-        Box::new(NormalMode)
-    }
-}
-
-impl Widget for &Box<dyn Mode> {
+impl Widget for &dyn Mode {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         let cmd_line = Block::default()
             .borders(Borders::NONE)
             .style(Style::default().bg(Color::Rgb(50, 50, 50)));
         self.status_msg().block(cmd_line).render(area, buf);
+    }
+}
+
+pub struct ModeHandler(Box<dyn Mode>);
+
+impl Default for ModeHandler {
+    fn default() -> Self {
+        Self(Box::new(NormalMode::new()))
+    }
+}
+
+impl ModeHandler {
+    pub fn process_event(&mut self, event: Event, cursor_coord: Coord) -> AppOp {
+        unsafe {
+            let current_mode: Box<dyn Mode> = std::ptr::read(&self.0);
+            let (next_mode, app_op) = current_mode.next(event, cursor_coord);
+            std::ptr::write(&mut self.0, next_mode);
+            app_op
+        }
+    }
+
+    pub fn get(&self) -> &dyn Mode {
+        self.0.as_ref()
     }
 }
