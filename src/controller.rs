@@ -1,6 +1,6 @@
 use crate::{
     canvas::shape::Shape,
-    util::{UCoord, Direction},
+    util::{Direction, UCoord},
 };
 
 pub mod mode;

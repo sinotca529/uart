@@ -51,14 +51,16 @@ impl App {
         loop {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
-            let cursor_coord = self.canvas_handler.canvas.cursor();
-            let op = self.mode.process_event(event, cursor_coord);
+
+            let canvas = &mut self.canvas_handler.canvas;
+            let canvas_cursor = canvas.cursor_mut();
+            let op = self.mode.process_event(event, canvas_cursor);
 
             match op {
                 QuitApp => break,
-                MakeShape(c, s) => self.canvas_handler.canvas.add_shape(c, s),
-                MoveCanvasCursor(d) => self.canvas_handler.canvas.move_cursor(d),
-                SetCanvasCursor(c) => self.canvas_handler.canvas.set_cursor(c),
+                MakeShape(c, s) => canvas.add_shape(c, s),
+                MoveCanvasCursor(d) => canvas_cursor.move_next(d),
+                SetCanvasCursor(c) => canvas_cursor.move_to(c),
                 Nop => {}
             }
         }

@@ -8,7 +8,8 @@ use tui::{
 use crate::{
     canvas::shape::{rect::Rect, Shape},
     controller::AppOp,
-    util::{UCoord, Direction, Size},
+    cursor::Cursor,
+    util::{Direction, Size, UCoord},
 };
 
 use super::{normal::NormalMode, Mode};
@@ -64,12 +65,12 @@ impl MakeRectMode {
 }
 
 impl Mode for MakeRectMode {
-    fn next(self: Box<Self>, e: Event, canvas_cursor: UCoord) -> (Box<dyn Mode>, AppOp) {
+    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::MakeRect => {
-                let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
+                let (start, rect) = Self::make_rect(self.start_coord, cursor.coord());
                 let op = AppOp::MakeShape(start, Box::new(rect));
                 let mode = Box::new(NormalMode);
                 (mode, op)

@@ -1,8 +1,5 @@
 use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode};
-use crate::{
-    controller::AppOp,
-    util::{UCoord, Direction},
-};
+use crate::{controller::AppOp, cursor::Cursor, util::Direction};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
@@ -60,7 +57,7 @@ impl Default for NormalMode {
 }
 
 impl Mode for NormalMode {
-    fn next(self: Box<Self>, e: Event, canvas_cursor: UCoord) -> (Box<dyn Mode>, AppOp) {
+    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::EnterCmd => {
                 let cmd = Box::new(CmdMode::new());
@@ -68,8 +65,8 @@ impl Mode for NormalMode {
             }
             Op::Nop => (self, AppOp::Nop),
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
-            Op::EnterMakeRect => (Box::new(MakeRectMode::new(canvas_cursor)), AppOp::Nop),
-            Op::EnterMakeText => (Box::new(MakeTextMode::new(canvas_cursor)), AppOp::Nop),
+            Op::EnterMakeRect => (Box::new(MakeRectMode::new(cursor.coord())), AppOp::Nop),
+            Op::EnterMakeText => (Box::new(MakeTextMode::new(cursor.coord())), AppOp::Nop),
         }
     }
 

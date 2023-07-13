@@ -8,6 +8,7 @@ use tui::{
 use crate::{
     canvas::shape::{text::Text, Shape},
     controller::AppOp,
+    cursor::Cursor,
     util::UCoord,
 };
 
@@ -53,7 +54,8 @@ impl MakeTextMode {
 }
 
 impl Mode for MakeTextMode {
-    fn next(mut self: Box<Self>, e: Event, mut canvas_cursor: UCoord) -> (Box<dyn Mode>, AppOp) {
+    fn next(mut self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
+        let mut cursor_coord = cursor.coord();
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MakeText => {
@@ -64,29 +66,30 @@ impl Mode for MakeTextMode {
             }
             Op::AddChar(c) => {
                 self.text.push(c);
-                canvas_cursor.x += UnicodeWidthChar::width(c).unwrap() as u16;
-                (self, AppOp::SetCanvasCursor(canvas_cursor))
+                cursor_coord.x += UnicodeWidthChar::width(c).unwrap() as u16;
+                (self, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Enter => {
                 self.text.push('\n');
-                canvas_cursor.y += 1;
-                canvas_cursor.x = self.start_coord.x;
-                (self, AppOp::SetCanvasCursor(canvas_cursor))
+                cursor_coord.y += 1;
+                cursor_coord.x = self.start_coord.x;
+                (self, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Backspace => {
                 let c = self.text.pop();
                 match c {
                     Some('\n') => {
-                        canvas_cursor.y -= 1;
-                        canvas_cursor.x +=
-                            UnicodeWidthStr::width(self.text.lines().last().unwrap_or("")) as u16;
+                        let last_line = self.text.lines().last().unwrap_or("");
+                        let last_line_width = UnicodeWidthStr::width(last_line) as u16;
+                        cursor_coord.y -= 1;
+                        cursor_coord.x += last_line_width;
                     }
                     Some(c) => {
-                        canvas_cursor.x -= UnicodeWidthChar::width(c).unwrap() as u16;
+                        cursor_coord.x -= UnicodeWidthChar::width(c).unwrap() as u16;
                     }
                     _ => {}
                 }
-                (self, AppOp::SetCanvasCursor(canvas_cursor))
+                (self, AppOp::SetCanvasCursor(cursor_coord))
             }
         }
     }

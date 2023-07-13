@@ -6,7 +6,7 @@ use tui::{
 };
 
 use super::{normal::NormalMode, Mode};
-use crate::{controller::AppOp, util::UCoord};
+use crate::{controller::AppOp, cursor::Cursor};
 
 /// Operations for command mode.
 enum Op {
@@ -53,7 +53,7 @@ impl Default for CmdMode {
 }
 
 impl Mode for CmdMode {
-    fn next(mut self: Box<Self>, e: Event, _: UCoord) -> (Box<dyn Mode>, AppOp) {
+    fn next(mut self: Box<Self>, e: Event, _: &Cursor) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Enter => {
                 let app_op = if self.cmd == ":q" {

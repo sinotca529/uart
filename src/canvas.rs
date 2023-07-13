@@ -5,15 +5,15 @@ use self::{
     shape::Shape,
     shape_id::{Id, IdGenerator},
 };
-use crate::util::{UCoord, Direction};
 use crate::{controller::mode::Mode, util::Size};
+use crate::{cursor::Cursor, util::UCoord};
 use std::collections::BTreeMap;
 use tui::{style::Color, widgets::StatefulWidget};
 
 pub struct Canvas {
     sig: IdGenerator,
     shapes: BTreeMap<Id, (UCoord, Box<dyn Shape>)>,
-    cursor: UCoord,
+    cursor: Cursor,
 }
 
 impl Canvas {
@@ -21,21 +21,12 @@ impl Canvas {
         Self {
             sig: IdGenerator::new(),
             shapes: BTreeMap::new(),
-            cursor: UCoord::new(0, 0),
+            cursor: Cursor::default(),
         }
     }
 
-    pub fn cursor(&self) -> UCoord {
-        self.cursor
-    }
-
-    pub fn move_cursor(&mut self, d: Direction) {
-        // TODO : consider about wide width char
-        self.cursor = self.cursor.adjacency(d);
-    }
-
-    pub fn set_cursor(&mut self, c: UCoord) {
-        self.cursor = c;
+    pub fn cursor_mut(&mut self) -> &mut Cursor {
+        &mut self.cursor
     }
 
     pub fn add_shape(&mut self, coord: UCoord, shape: Box<dyn Shape>) {
@@ -96,12 +87,12 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
 
         let offset: UCoord = {
             let x = calc_offset(
-                canvas.cursor.x,
+                canvas.cursor.x(),
                 self.prev_render_left_top_coord.x,
                 state.canvas_size.width,
             );
             let y = calc_offset(
-                canvas.cursor.y,
+                canvas.cursor.y(),
                 self.prev_render_left_top_coord.y,
                 state.canvas_size.height,
             );
@@ -114,14 +105,14 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
         }
 
         // Render mode specific objects
-        for (coord, shape) in state.mode.additional_shapes(canvas.cursor) {
+        for (coord, shape) in state.mode.additional_shapes(canvas.cursor.coord()) {
             shape.render(coord.offset(offset), area, buf);
         }
 
         // Render cursor
         buf.get_mut(
-            area.x + canvas.cursor.x - offset.x,
-            area.y + canvas.cursor.y - offset.y,
+            area.x + canvas.cursor.x() - offset.x,
+            area.y + canvas.cursor.y() - offset.y,
         )
         .set_bg(Color::Rgb(128, 128, 128));
 

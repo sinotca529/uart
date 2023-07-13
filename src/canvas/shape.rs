@@ -1,4 +1,4 @@
-use crate::util::{make_area, UCoord, ICoord, Size};
+use crate::util::{make_area, ICoord, Size, UCoord};
 pub mod rect;
 pub mod style;
 pub mod text;

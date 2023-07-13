@@ -1,6 +1,6 @@
 use self::normal::NormalMode;
 use super::AppOp;
-use crate::{canvas::shape::Shape, util::UCoord};
+use crate::{canvas::shape::Shape, cursor::Cursor, util::UCoord};
 use crossterm::event::Event;
 use tui::{
     style::{Color, Style},
@@ -13,7 +13,7 @@ mod make_text;
 mod normal;
 
 pub trait Mode {
-    fn next(self: Box<Self>, e: Event, canvas_cursor: UCoord) -> (Box<dyn Mode>, AppOp);
+    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp);
     fn additional_shapes(&self, _canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         vec![]
     }
@@ -38,10 +38,10 @@ impl Default for ModeHandler {
 }
 
 impl ModeHandler {
-    pub fn process_event(&mut self, event: Event, cursor_coord: UCoord) -> AppOp {
+    pub fn process_event(&mut self, event: Event, cursor: &Cursor) -> AppOp {
         unsafe {
             let current_mode: Box<dyn Mode> = std::ptr::read(&self.0);
-            let (next_mode, app_op) = current_mode.next(event, cursor_coord);
+            let (next_mode, app_op) = current_mode.next(event, cursor);
             std::ptr::write(&mut self.0, next_mode);
             app_op
         }
