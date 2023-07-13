@@ -5,15 +5,15 @@ use self::{
     shape::Shape,
     shape_id::{Id, IdGenerator},
 };
-use crate::util::{Coord, Direction};
+use crate::util::{UCoord, Direction};
 use crate::{controller::mode::Mode, util::Size};
 use std::collections::BTreeMap;
 use tui::{style::Color, widgets::StatefulWidget};
 
 pub struct Canvas {
     sig: IdGenerator,
-    shapes: BTreeMap<Id, (Coord, Box<dyn Shape>)>,
-    cursor: Coord,
+    shapes: BTreeMap<Id, (UCoord, Box<dyn Shape>)>,
+    cursor: UCoord,
 }
 
 impl Canvas {
@@ -21,11 +21,11 @@ impl Canvas {
         Self {
             sig: IdGenerator::new(),
             shapes: BTreeMap::new(),
-            cursor: Coord::new(0, 0),
+            cursor: UCoord::new(0, 0),
         }
     }
 
-    pub fn cursor(&self) -> Coord {
+    pub fn cursor(&self) -> UCoord {
         self.cursor
     }
 
@@ -34,17 +34,17 @@ impl Canvas {
         self.cursor = self.cursor.adjacency(d);
     }
 
-    pub fn set_cursor(&mut self, c: Coord) {
+    pub fn set_cursor(&mut self, c: UCoord) {
         self.cursor = c;
     }
 
-    pub fn add_shape(&mut self, coord: Coord, shape: Box<dyn Shape>) {
+    pub fn add_shape(&mut self, coord: UCoord, shape: Box<dyn Shape>) {
         let id = self.sig.gen();
         let old = self.shapes.insert(id, (coord, shape));
         assert!(old.is_none());
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &(Coord, Box<dyn Shape>)> {
+    pub fn shapes(&self) -> impl Iterator<Item = &(UCoord, Box<dyn Shape>)> {
         self.shapes.iter().map(|e| e.1)
     }
 }
@@ -58,7 +58,7 @@ impl Default for Canvas {
 #[derive(Default)]
 pub struct CanvasHandler {
     pub canvas: Canvas,
-    prev_render_left_top_coord: Coord,
+    prev_render_left_top_coord: UCoord,
 }
 
 pub struct RenderState<'a> {
@@ -94,7 +94,7 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
             }
         };
 
-        let offset: Coord = {
+        let offset: UCoord = {
             let x = calc_offset(
                 canvas.cursor.x,
                 self.prev_render_left_top_coord.x,
@@ -105,7 +105,7 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
                 self.prev_render_left_top_coord.y,
                 state.canvas_size.height,
             );
-            Coord::new(x, y)
+            UCoord::new(x, y)
         };
 
         // Render shapes

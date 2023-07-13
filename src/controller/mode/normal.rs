@@ -1,7 +1,7 @@
 use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode};
 use crate::{
     controller::AppOp,
-    util::{Coord, Direction},
+    util::{UCoord, Direction},
 };
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -60,7 +60,7 @@ impl Default for NormalMode {
 }
 
 impl Mode for NormalMode {
-    fn next(self: Box<Self>, e: Event, canvas_cursor: Coord) -> (Box<dyn Mode>, AppOp) {
+    fn next(self: Box<Self>, e: Event, canvas_cursor: UCoord) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::EnterCmd => {
                 let cmd = Box::new(CmdMode::new());

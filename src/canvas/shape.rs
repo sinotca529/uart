@@ -1,4 +1,4 @@
-use crate::util::{make_area, Coord, Offset, Size};
+use crate::util::{make_area, UCoord, ICoord, Size};
 pub mod rect;
 pub mod style;
 pub mod text;
@@ -11,7 +11,7 @@ use unicode_width::UnicodeWidthChar;
 pub trait Shape: ToString {
     fn size(&self) -> Size;
 
-    fn render(&self, mut offset: Offset, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(&self, mut offset: ICoord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         // Skip if nothing to render.
         let shape_size = self.size();
         let buf_width = buf.area().width;
@@ -71,7 +71,7 @@ pub trait Shape: ToString {
         offset.y = 0.max(offset.y);
 
         // Render
-        let upper_left = Coord::new(area.x + offset.x as u16, area.y + offset.y as u16);
+        let upper_left = UCoord::new(area.x + offset.x as u16, area.y + offset.y as u16);
         let size = Size::new(
             shape_size.width.min(buf_width),
             shape_size.height.min(buf_height),

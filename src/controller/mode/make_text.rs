@@ -8,7 +8,7 @@ use tui::{
 use crate::{
     canvas::shape::{text::Text, Shape},
     controller::AppOp,
-    util::Coord,
+    util::UCoord,
 };
 
 use super::{normal::NormalMode, Mode};
@@ -39,12 +39,12 @@ impl From<Event> for Op {
 }
 
 pub struct MakeTextMode {
-    start_coord: Coord,
+    start_coord: UCoord,
     text: String,
 }
 
 impl MakeTextMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
+    pub fn new(canvas_cursor: UCoord) -> Self {
         Self {
             start_coord: canvas_cursor,
             text: String::new(),
@@ -53,7 +53,7 @@ impl MakeTextMode {
 }
 
 impl Mode for MakeTextMode {
-    fn next(mut self: Box<Self>, e: Event, mut canvas_cursor: Coord) -> (Box<dyn Mode>, AppOp) {
+    fn next(mut self: Box<Self>, e: Event, mut canvas_cursor: UCoord) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MakeText => {
@@ -91,7 +91,7 @@ impl Mode for MakeTextMode {
         }
     }
 
-    fn additional_shapes(&self, _: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
+    fn additional_shapes(&self, _: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         let text = Text::new(self.text.clone());
         vec![(self.start_coord, Box::new(text))]
     }
