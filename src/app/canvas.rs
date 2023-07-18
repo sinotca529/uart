@@ -52,8 +52,14 @@ impl Default for Canvas {
 
 #[derive(Default)]
 pub struct CanvasHandler {
-    pub canvas: Canvas,
+    canvas: Canvas,
     prev_render_left_top_coord: UCoord,
+}
+
+impl CanvasHandler {
+    pub fn canvas_mut(&mut self) -> &mut Canvas {
+        &mut self.canvas
+    }
 }
 
 pub struct RenderState<'a> {

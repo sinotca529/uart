@@ -65,7 +65,7 @@ impl App {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
 
-            let canvas = &mut self.canvas_handler.canvas;
+            let canvas = self.canvas_handler.canvas_mut();
             let canvas_cursor = canvas.cursor_mut();
             let op = self.mode.process_event(event, canvas_cursor);
 
