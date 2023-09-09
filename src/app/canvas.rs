@@ -65,16 +65,23 @@ impl CanvasHandler {
         &mut self.canvas
     }
 
-    pub fn cursor_renderer(&self) -> impl Widget {
-        let cx = self.canvas.cursor.x() - self.rendering_offset.x;
-        let cy = self.canvas.cursor.y() - self.rendering_offset.y;
+    pub fn shape_renderer<'a>(&'a self) -> impl Widget + 'a {
+        OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
+            // id is used as z-index
+            for (coord, shape) in self.canvas.shapes() {
+                shape.render(coord.offset(self.rendering_offset), area, buf);
+            }
+        })
+    }
 
-        OnetimeWidget::new(
-            move |area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
-                buf.get_mut(area.x + cx, area.y + cy)
-                    .set_bg(Color::Rgb(128, 128, 128));
-            },
-        )
+    pub fn cursor_renderer<'a>(&'a self) -> impl Widget + 'a {
+        OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
+            buf.get_mut(
+                area.x + self.canvas.cursor.x() - self.rendering_offset.x,
+                area.y + self.canvas.cursor.y() - self.rendering_offset.y,
+            )
+            .set_bg(Color::Rgb(128, 128, 128));
+        })
     }
 
     /// Update rendering offset.
@@ -140,11 +147,6 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
     ) {
         self.update_rendering_offset(state.canvas_size);
         let canvas = &self.canvas;
-
-        // Render shapes (id is used as z-index)
-        for (coord, shape) in canvas.shapes() {
-            shape.render(coord.offset(self.rendering_offset), area, buf);
-        }
 
         // Render mode specific objects (TODO : This is not a task of CnavasHandler. move to Mode.)
         for (coord, shape) in state.mode.additional_shapes(canvas.cursor.coord()) {
