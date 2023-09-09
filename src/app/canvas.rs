@@ -2,9 +2,12 @@ pub mod cursor;
 
 use self::cursor::Cursor;
 use super::{mode::Mode, shape::Shape};
-use crate::util::{Id, IdGenerator, Size, UCoord};
+use crate::util::{Id, IdGenerator, OnetimeWidget, Size, UCoord};
 use std::collections::BTreeMap;
-use tui::{style::Color, widgets::StatefulWidget};
+use tui::{
+    style::Color,
+    widgets::{StatefulWidget, Widget},
+};
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
 enum ShapeTag {}
@@ -54,7 +57,7 @@ impl Default for Canvas {
 #[derive(Default)]
 pub struct CanvasHandler {
     canvas: Canvas,
-    prev_offset: UCoord,
+    rendering_offset: UCoord,
 }
 
 impl CanvasHandler {
@@ -62,7 +65,21 @@ impl CanvasHandler {
         &mut self.canvas
     }
 
-    pub fn calc_rendering_offset(&self, canvas_size: Size) -> UCoord {
+    pub fn cursor_renderer(&self) -> impl Widget {
+        let cx = self.canvas.cursor.x() - self.rendering_offset.x;
+        let cy = self.canvas.cursor.y() - self.rendering_offset.y;
+
+        OnetimeWidget::new(
+            move |area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
+                buf.get_mut(area.x + cx, area.y + cy)
+                    .set_bg(Color::Rgb(128, 128, 128));
+            },
+        )
+    }
+
+    /// Update rendering offset.
+    /// This method must be called before rendering canvas.
+    pub fn update_rendering_offset(&mut self, canvas_size: Size) {
         //
         //       Canvas
         //      ┌─────────────────────────┐
@@ -93,10 +110,10 @@ impl CanvasHandler {
         };
 
         let cursor = &self.canvas.cursor;
-        UCoord {
-            x: calc(cursor.x(), self.prev_offset.x, canvas_size.width),
-            y: calc(cursor.y(), self.prev_offset.y, canvas_size.height),
-        }
+        self.rendering_offset = UCoord {
+            x: calc(cursor.x(), self.rendering_offset.x, canvas_size.width),
+            y: calc(cursor.y(), self.rendering_offset.y, canvas_size.height),
+        };
     }
 }
 
@@ -121,26 +138,17 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
         buf: &mut tui::buffer::Buffer,
         state: &mut Self::State,
     ) {
+        self.update_rendering_offset(state.canvas_size);
         let canvas = &self.canvas;
-        let offset = self.calc_rendering_offset(state.canvas_size);
 
         // Render shapes (id is used as z-index)
         for (coord, shape) in canvas.shapes() {
-            shape.render(coord.offset(offset), area, buf);
+            shape.render(coord.offset(self.rendering_offset), area, buf);
         }
 
         // Render mode specific objects (TODO : This is not a task of CnavasHandler. move to Mode.)
         for (coord, shape) in state.mode.additional_shapes(canvas.cursor.coord()) {
-            shape.render(coord.offset(offset), area, buf);
+            shape.render(coord.offset(self.rendering_offset), area, buf);
         }
-
-        // Render cursor (TODO : separate from canvas's rendering)
-        buf.get_mut(
-            area.x + canvas.cursor.x() - offset.x,
-            area.y + canvas.cursor.y() - offset.y,
-        )
-        .set_bg(Color::Rgb(128, 128, 128));
-
-        self.prev_offset = offset;
     }
 }
