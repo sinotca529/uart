@@ -12,72 +12,81 @@ use unicode_width::UnicodeWidthChar;
 pub trait Shape: ToString {
     fn size(&self) -> Size;
 
-    fn render(&self, mut offset: ICoord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        // Skip if nothing to render.
-        let shape_size = self.size();
-        let buf_width = buf.area().width;
-        let buf_height = buf.area().height;
+    fn render(&self, offset: ICoord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        //
+        // offset > 0
+        //
+        //    area
+        //    ┌────────────────────────┐
+        //    │                        │
+        //    │<---------- a --------->│
+        //    │       <-------- w -----│---->
+        //    │<- o ->┌────────────────│─────┐
+        //    │       └────────────────│─────┘
+        //    │       <- min(a-o, w) ->│
+        //    │                        │
+        //
+        //
+        // offset < 0
+        //             area
+        //             ┌────────────────────────┐
+        //             │                        │
+        //   <- (-o) ->│<---------- a --------->│
+        //   ┌─────────│────────────────────────│─────┐
+        //   └─────────│────────────────────────│─────┘
+        //   <---------│-------- w -------------│----->
+        //   <---------│-- min(a-o, w) -------->│
+        //             │                        │
+        //
+        //
+        // => range_to_render = [max(0, -o), min(a-o, w) - 1]
 
-        if shape_size.width as i16 <= -offset.x
-            || shape_size.height as i16 <= -offset.y
-            || offset.x >= buf_width as i16
-            || offset.y >= buf_height as i16
-        {
+        let x_range =
+            0.max(-offset.x)..(area.width as i16 - offset.x).min(self.size().width as i16);
+        let y_range =
+            0.max(-offset.y)..(area.height as i16 - offset.y).min(self.size().height as i16);
+
+        // Skip if the shape is out of the area.
+        if x_range.is_empty() || y_range.is_empty() {
             return;
         }
-
-        // Cut string with considering offset.
-        let buf_width = buf.area().width;
-        let buf_height = buf.area().height;
 
         let cut: String = self
             .to_string()
             .lines()
-            .skip(0.max(-offset.y) as usize)
-            .take(buf_height as usize - offset.y.max(0) as usize)
+            // cut top/bottom
+            .skip(y_range.start as usize)
+            .take(y_range.len())
+            // cut left/right
             .map(|l| {
-                let mut displaied_width = 0;
-                let mut trimed_str = String::new();
+                l.chars()
+                    .scan(-1, |width, c| {
+                        // width : offset of the end of the char (0-origin).
+                        //    abあc -> (0, a), (1, b), (3, あ), (4, c)
+                        let delta = UnicodeWidthChar::width(c).unwrap() as i16;
+                        *width += delta;
 
-                let mut chars = l.chars();
-
-                // Trim front
-                if offset.x < 0 {
-                    let mut tmp_off = offset.x;
-                    while tmp_off < 0 {
-                        // FIXME : something wrong with this unwrap.
-                        let c = chars.next().unwrap();
-                        tmp_off += UnicodeWidthChar::width(c).unwrap() as i16;
-                    }
-                    for _ in 0..tmp_off {
-                        trimed_str.push(' ');
-                        displaied_width += 1;
-                    }
-                }
-
-                // Trim back.
-                for c in chars {
-                    displaied_width += UnicodeWidthChar::width(c).unwrap() as u16;
-                    if displaied_width <= buf_width {
-                        trimed_str.push(c);
-                    } else {
-                        break;
-                    }
-                }
-                trimed_str.push('\n');
-                trimed_str
+                        // Replace a full-width (全角) char at the edge of the screen with a space.
+                        if delta == 2 && *width == x_range.start {
+                            Some((*width, ' '))
+                        } else {
+                            Some((*width, c))
+                        }
+                    })
+                    .skip_while(|&(width, _)| width < x_range.start)
+                    .take_while(|&(width, _)| width < x_range.end)
+                    .map(|(_, c)| c)
+                    .chain(['\n'])
+                    .collect::<String>()
             })
             .collect();
 
-        offset.x = 0.max(offset.x);
-        offset.y = 0.max(offset.y);
-
         // Render
-        let upper_left = UCoord::new(area.x + offset.x as u16, area.y + offset.y as u16);
-        let size = Size::new(
-            shape_size.width.min(buf_width),
-            shape_size.height.min(buf_height),
+        let upper_left = UCoord::new(
+            area.x + 0.max(offset.x) as u16,
+            area.y + 0.max(offset.y) as u16,
         );
+        let size = Size::new(x_range.len() as u16, y_range.len() as u16);
         let shape_area = make_area(&upper_left, &size);
 
         let t: tui::text::Text = cut.into();
