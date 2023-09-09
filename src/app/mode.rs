@@ -7,10 +7,7 @@ use self::normal::NormalMode;
 use super::{canvas::cursor::Cursor, cmd_line::CmdLine, shape::Shape, AppOp};
 use crate::util::UCoord;
 use crossterm::event::Event;
-use tui::{
-    style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Widget},
-};
+use tui::widgets::Paragraph;
 
 pub trait Mode {
     fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp);
@@ -20,19 +17,11 @@ pub trait Mode {
         vec![]
     }
 
+    /// Message to show in command line.
     fn status_msg(&self) -> Paragraph;
 
     fn cmd_line(&self) -> CmdLine {
         CmdLine::new(self.status_msg())
-    }
-}
-
-impl Widget for &dyn Mode {
-    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
-        let cmd_line = Block::default()
-            .borders(Borders::NONE)
-            .style(Style::default().bg(Color::Rgb(50, 50, 50)));
-        self.status_msg().block(cmd_line).render(area, buf);
     }
 }
 
