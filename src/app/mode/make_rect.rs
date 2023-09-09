@@ -79,7 +79,7 @@ impl Mode for MakeRectMode {
         }
     }
 
-    fn additional_shapes(&self, canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
+    fn additinal_canvas_shapes(&self, canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
         vec![(start, Box::new(rect))]
     }

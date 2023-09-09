@@ -1,13 +1,10 @@
 pub mod cursor;
 
 use self::cursor::Cursor;
-use super::{mode::Mode, shape::Shape};
+use super::shape::Shape;
 use crate::util::{Id, IdGenerator, OnetimeWidget, Size, UCoord};
 use std::collections::BTreeMap;
-use tui::{
-    style::Color,
-    widgets::{StatefulWidget, Widget},
-};
+use tui::{style::Color, widgets::Widget};
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
 enum ShapeTag {}
@@ -69,7 +66,8 @@ impl CanvasHandler {
         OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
             // id is used as z-index
             for (coord, shape) in self.canvas.shapes() {
-                shape.render(coord.offset(self.rendering_offset), area, buf);
+                let offset_from_area = coord.offset(self.rendering_offset);
+                shape.render(offset_from_area, area, buf);
             }
         })
     }
@@ -122,35 +120,12 @@ impl CanvasHandler {
             y: calc(cursor.y(), self.rendering_offset.y, canvas_size.height),
         };
     }
-}
 
-// State used to rendering the canvas.
-pub struct RenderState<'a> {
-    mode: &'a dyn Mode,
-    canvas_size: Size,
-}
-
-impl<'a> RenderState<'a> {
-    pub fn new(mode: &'a dyn Mode, canvas_size: Size) -> Self {
-        Self { mode, canvas_size }
+    pub fn rendering_offset(&self) -> UCoord {
+        self.rendering_offset
     }
-}
 
-impl<'a> StatefulWidget for &'a mut CanvasHandler {
-    type State = RenderState<'a>;
-
-    fn render(
-        self,
-        area: tui::layout::Rect,
-        buf: &mut tui::buffer::Buffer,
-        state: &mut Self::State,
-    ) {
-        self.update_rendering_offset(state.canvas_size);
-        let canvas = &self.canvas;
-
-        // Render mode specific objects (TODO : This is not a task of CnavasHandler. move to Mode.)
-        for (coord, shape) in state.mode.additional_shapes(canvas.cursor.coord()) {
-            shape.render(coord.offset(self.rendering_offset), area, buf);
-        }
+    pub fn cursor_coord(&self) -> UCoord {
+        self.canvas.cursor.coord()
     }
 }

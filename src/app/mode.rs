@@ -4,7 +4,7 @@ mod make_text;
 mod normal;
 
 use self::normal::NormalMode;
-use super::{canvas::cursor::Cursor, shape::Shape, AppOp};
+use super::{canvas::cursor::Cursor, cmd_line::CmdLine, shape::Shape, AppOp};
 use crate::util::UCoord;
 use crossterm::event::Event;
 use tui::{
@@ -14,10 +14,17 @@ use tui::{
 
 pub trait Mode {
     fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp);
-    fn additional_shapes(&self, _canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
+
+    /// Additional shapes to render on the canvas.
+    fn additinal_canvas_shapes(&self, _canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         vec![]
     }
+
     fn status_msg(&self) -> Paragraph;
+
+    fn cmd_line(&self) -> CmdLine {
+        CmdLine::new(self.status_msg())
+    }
 }
 
 impl Widget for &dyn Mode {
@@ -49,5 +56,40 @@ impl ModeHandler {
 
     pub fn get(&self) -> &dyn Mode {
         self.0.as_ref()
+    }
+
+    pub fn canvas_modifier<'a>(
+        &'a self,
+        canvas_rendering_offset: UCoord,
+        cursor_coord: UCoord,
+    ) -> CanvasModifier {
+        let shapes = self.0.additinal_canvas_shapes(cursor_coord);
+        CanvasModifier::new(shapes, canvas_rendering_offset)
+    }
+}
+
+pub struct CanvasModifier {
+    additional_shapes: Vec<(UCoord, Box<dyn Shape>)>,
+    canvas_rendering_offset: UCoord,
+}
+
+impl CanvasModifier {
+    fn new(
+        additional_shapes: Vec<(UCoord, Box<dyn Shape>)>,
+        canvas_rendering_offset: UCoord,
+    ) -> Self {
+        Self {
+            additional_shapes,
+            canvas_rendering_offset,
+        }
+    }
+}
+
+impl Widget for CanvasModifier {
+    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        for (coord, shape) in self.additional_shapes {
+            let offset_from_area = coord.offset(self.canvas_rendering_offset);
+            shape.render(offset_from_area, area, buf);
+        }
     }
 }

@@ -93,7 +93,7 @@ impl Mode for MakeTextMode {
         }
     }
 
-    fn additional_shapes(&self, _: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
+    fn additinal_canvas_shapes(&self, _: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         let text = Text::new(self.text.clone());
         vec![(self.start_coord, Box::new(text))]
     }
