@@ -32,10 +32,11 @@ impl Canvas {
     }
 
     /// Add new shape to canvas.
-    /// `coord` is the coord of upper-left corner.
+    /// `coord` is the coord of upper-left corner of the shape.
     pub fn add_shape(&mut self, coord: UCoord, shape: Box<dyn Shape>) {
         let id = self.sig.gen();
         let old = self.shapes.insert(id, (coord, shape));
+        // Ensure there is no shape which has same id.
         assert!(old.is_none());
     }
 
@@ -53,15 +54,53 @@ impl Default for Canvas {
 #[derive(Default)]
 pub struct CanvasHandler {
     canvas: Canvas,
-    prev_render_left_top_coord: UCoord,
+    prev_offset: UCoord,
 }
 
 impl CanvasHandler {
     pub fn canvas_mut(&mut self) -> &mut Canvas {
         &mut self.canvas
     }
+
+    pub fn calc_rendering_offset(&self, canvas_size: Size) -> UCoord {
+        //
+        //       Canvas
+        //      ┌─────────────────────────┐
+        //      │  Rendering area         │
+        //      │  ┌───────────────────┐  │
+        //      │  │                   │  │
+        //      │  └───────────────────┘  │
+        //      └─────────────────────────┘
+        // --------+-------------------+-------> x
+        //         P                  P+W
+        //   (Prev offset)
+        //
+        //
+        //  Cursor Pos Range  | Next offset
+        //  ==================|==============
+        //    [0, P)          |     C
+        //    [P, P+W]        |     P
+        //    [P+W, ∞)        |     C - (W - 1)
+        //
+        let calc = |c: u16, p: u16, w: u16| -> u16 {
+            if c < p {
+                c
+            } else if c < p + w {
+                p
+            } else {
+                c - (w - 1)
+            }
+        };
+
+        let cursor = &self.canvas.cursor;
+        UCoord {
+            x: calc(cursor.x(), self.prev_offset.x, canvas_size.width),
+            y: calc(cursor.y(), self.prev_offset.y, canvas_size.height),
+        }
+    }
 }
 
+// State used to rendering the canvas.
 pub struct RenderState<'a> {
     mode: &'a dyn Mode,
     canvas_size: Size,
@@ -83,49 +122,25 @@ impl<'a> StatefulWidget for &'a mut CanvasHandler {
         state: &mut Self::State,
     ) {
         let canvas = &self.canvas;
-
-        // calc offset
-        let calc_offset = |c: u16, low: u16, length: u16| -> u16 {
-            if c < low {
-                c
-            } else if c > low + length - 1 {
-                c - (length - 1)
-            } else {
-                low
-            }
-        };
-
-        let offset: UCoord = {
-            let x = calc_offset(
-                canvas.cursor.x(),
-                self.prev_render_left_top_coord.x,
-                state.canvas_size.width,
-            );
-            let y = calc_offset(
-                canvas.cursor.y(),
-                self.prev_render_left_top_coord.y,
-                state.canvas_size.height,
-            );
-            UCoord::new(x, y)
-        };
+        let offset = self.calc_rendering_offset(state.canvas_size);
 
         // Render shapes (id is used as z-index)
         for (coord, shape) in canvas.shapes() {
             shape.render(coord.offset(offset), area, buf);
         }
 
-        // Render mode specific objects
+        // Render mode specific objects (TODO : This is not a task of CnavasHandler. move to Mode.)
         for (coord, shape) in state.mode.additional_shapes(canvas.cursor.coord()) {
             shape.render(coord.offset(offset), area, buf);
         }
 
-        // Render cursor
+        // Render cursor (TODO : separate from canvas's rendering)
         buf.get_mut(
             area.x + canvas.cursor.x() - offset.x,
             area.y + canvas.cursor.y() - offset.y,
         )
         .set_bg(Color::Rgb(128, 128, 128));
 
-        self.prev_render_left_top_coord = offset;
+        self.prev_offset = offset;
     }
 }
