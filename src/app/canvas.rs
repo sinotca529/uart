@@ -2,9 +2,9 @@ pub mod cursor;
 
 use self::cursor::Cursor;
 use super::shape::Shape;
-use crate::util::{Direction, Id, IdGenerator, OnetimeWidget, Size, UCoord};
+use crate::util::{Direction, Id, IdGenerator, Size, UCoord};
 use std::collections::BTreeMap;
-use tui::{style::Color, widgets::Widget};
+use tui::{style::Color, widgets::StatefulWidget};
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
 enum ShapeTag {}
@@ -38,23 +38,13 @@ impl Canvas {
         assert!(old.is_none());
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &(UCoord, Box<dyn Shape>)> {
+    fn shapes(&self) -> impl Iterator<Item = &(UCoord, Box<dyn Shape>)> {
         self.shapes.iter().map(|e| e.1)
-    }
-
-    pub fn shape_renderer<'a>(&'a self) -> impl Widget + 'a {
-        OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
-            // id is used as z-index
-            for (coord, shape) in self.shapes() {
-                let offset_from_area = coord.offset(self.rendering_offset);
-                shape.render(offset_from_area, area, buf);
-            }
-        })
     }
 
     /// Update rendering offset.
     /// This method must be called before rendering canvas.
-    pub fn update_rendering_offset(&mut self, canvas_size: Size) {
+    fn update_rendering_offset(&mut self, canvas_size: Size) {
         //
         //     Canvas
         //    ┌─────────────────────────┐
@@ -102,10 +92,6 @@ impl Canvas {
         &self.cursor
     }
 
-    pub fn rendering_offset(&self) -> UCoord {
-        self.rendering_offset
-    }
-
     pub fn move_cursor(&mut self, dir: Direction) {
         self.cursor.move_next(dir);
     }
@@ -113,20 +99,51 @@ impl Canvas {
     pub fn set_cursor(&mut self, coord: UCoord) {
         self.cursor.move_to(coord);
     }
-
-    pub fn cursor_renderer<'a>(&'a self) -> impl Widget + 'a {
-        OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
-            buf.get_mut(
-                area.x + self.cursor.x() - self.rendering_offset.x,
-                area.y + self.cursor.y() - self.rendering_offset.y,
-            )
-            .set_bg(Color::Rgb(128, 128, 128));
-        })
-    }
 }
 
 impl Default for Canvas {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub struct CanvasRenderingState {
+    canvas_size: Size,
+    additional_shapes: Vec<(UCoord, Box<dyn Shape>)>,
+}
+
+impl CanvasRenderingState {
+    pub fn new(canvas_size: Size, additional_shapes: Vec<(UCoord, Box<dyn Shape>)>) -> Self {
+        Self {
+            canvas_size,
+            additional_shapes,
+        }
+    }
+}
+
+impl StatefulWidget for &mut Canvas {
+    type State = CanvasRenderingState;
+
+    fn render(
+        self,
+        area: tui::layout::Rect,
+        buf: &mut tui::buffer::Buffer,
+        state: &mut Self::State,
+    ) {
+        self.update_rendering_offset(state.canvas_size);
+
+        // Render shapes.
+        // id is used as z-index (ref: BTreeMap::iter)
+        for (coord, shape) in self.shapes().chain(state.additional_shapes.iter()) {
+            let offset_from_area = coord.offset(self.rendering_offset);
+            shape.render(offset_from_area, area, buf);
+        }
+
+        // Render cursor.
+        buf.get_mut(
+            area.x + self.cursor.x() - self.rendering_offset.x,
+            area.y + self.cursor.y() - self.rendering_offset.y,
+        )
+        .set_bg(Color::Rgb(128, 128, 128));
     }
 }

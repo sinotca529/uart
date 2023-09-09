@@ -3,7 +3,12 @@ mod cmd_line;
 mod mode;
 mod shape;
 
-use self::{canvas::Canvas, cmd_line::CmdLine, mode::ModeHandler, shape::Shape};
+use self::{
+    canvas::{Canvas, CanvasRenderingState},
+    cmd_line::CmdLine,
+    mode::ModeHandler,
+    shape::Shape,
+};
 use crate::util::{Size, UCoord};
 use crossterm::{
     event, execute,
@@ -48,14 +53,14 @@ impl App {
             .split(f.size());
 
         let canvas_size = Size::new(chunks1[0].width, chunks1[0].height);
-        self.canvas.update_rendering_offset(canvas_size);
-        f.render_widget(self.canvas.shape_renderer(), chunks1[0]);
-        f.render_widget(
+
+        let mut crs = CanvasRenderingState::new(
+            canvas_size,
             self.mode
-                .canvas_modifier(self.canvas.rendering_offset(), self.canvas.cursor().coord()),
-            chunks1[0],
+                .get()
+                .additinal_canvas_shapes(self.canvas.cursor().coord()),
         );
-        f.render_widget(self.canvas.cursor_renderer(), chunks1[0]);
+        f.render_stateful_widget(&mut self.canvas, chunks1[0], &mut crs);
 
         let cmd_line = self.mode.get().cmd_line();
         f.render_widget(cmd_line, chunks1[1]);
@@ -68,7 +73,7 @@ impl App {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
 
-            let op = self.mode.process_event(event, &self.canvas.cursor());
+            let op = self.mode.process_event(event, self.canvas.cursor());
 
             match op {
                 QuitApp => break,
