@@ -2,7 +2,7 @@ pub mod cursor;
 
 use self::cursor::Cursor;
 use super::shape::Shape;
-use crate::util::{Id, IdGenerator, OnetimeWidget, Size, UCoord};
+use crate::util::{Direction, Id, IdGenerator, OnetimeWidget, Size, UCoord};
 use std::collections::BTreeMap;
 use tui::{style::Color, widgets::Widget};
 
@@ -15,6 +15,7 @@ type ShapeIdGen = IdGenerator<ShapeTag>;
 pub struct Canvas {
     sig: ShapeIdGen,
     shapes: BTreeMap<ShapeId, (UCoord, Box<dyn Shape>)>,
+    rendering_offset: UCoord,
     cursor: Cursor,
 }
 
@@ -23,12 +24,9 @@ impl Canvas {
         Self {
             sig: IdGenerator::new(),
             shapes: BTreeMap::new(),
+            rendering_offset: UCoord::default(),
             cursor: Cursor::default(),
         }
-    }
-
-    pub fn cursor_mut(&mut self) -> &mut Cursor {
-        &mut self.cursor
     }
 
     /// Add new shape to canvas.
@@ -43,42 +41,14 @@ impl Canvas {
     pub fn shapes(&self) -> impl Iterator<Item = &(UCoord, Box<dyn Shape>)> {
         self.shapes.iter().map(|e| e.1)
     }
-}
-
-impl Default for Canvas {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Default)]
-pub struct CanvasHandler {
-    canvas: Canvas,
-    rendering_offset: UCoord,
-}
-
-impl CanvasHandler {
-    pub fn canvas_mut(&mut self) -> &mut Canvas {
-        &mut self.canvas
-    }
 
     pub fn shape_renderer<'a>(&'a self) -> impl Widget + 'a {
         OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
             // id is used as z-index
-            for (coord, shape) in self.canvas.shapes() {
+            for (coord, shape) in self.shapes() {
                 let offset_from_area = coord.offset(self.rendering_offset);
                 shape.render(offset_from_area, area, buf);
             }
-        })
-    }
-
-    pub fn cursor_renderer<'a>(&'a self) -> impl Widget + 'a {
-        OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
-            buf.get_mut(
-                area.x + self.canvas.cursor.x() - self.rendering_offset.x,
-                area.y + self.canvas.cursor.y() - self.rendering_offset.y,
-            )
-            .set_bg(Color::Rgb(128, 128, 128));
         })
     }
 
@@ -114,18 +84,49 @@ impl CanvasHandler {
             }
         };
 
-        let cursor = &self.canvas.cursor;
         self.rendering_offset = UCoord {
-            x: calc(cursor.x(), self.rendering_offset.x, canvas_size.width),
-            y: calc(cursor.y(), self.rendering_offset.y, canvas_size.height),
+            x: calc(
+                self.cursor.coord().x,
+                self.rendering_offset.x,
+                canvas_size.width,
+            ),
+            y: calc(
+                self.cursor.coord().y,
+                self.rendering_offset.y,
+                canvas_size.height,
+            ),
         };
+    }
+
+    pub fn cursor(&self) -> &Cursor {
+        &self.cursor
     }
 
     pub fn rendering_offset(&self) -> UCoord {
         self.rendering_offset
     }
 
-    pub fn cursor_coord(&self) -> UCoord {
-        self.canvas.cursor.coord()
+    pub fn move_cursor(&mut self, dir: Direction) {
+        self.cursor.move_next(dir);
+    }
+
+    pub fn set_cursor(&mut self, coord: UCoord) {
+        self.cursor.move_to(coord);
+    }
+
+    pub fn cursor_renderer<'a>(&'a self) -> impl Widget + 'a {
+        OnetimeWidget::new(|area: tui::layout::Rect, buf: &mut tui::buffer::Buffer| {
+            buf.get_mut(
+                area.x + self.cursor.x() - self.rendering_offset.x,
+                area.y + self.cursor.y() - self.rendering_offset.y,
+            )
+            .set_bg(Color::Rgb(128, 128, 128));
+        })
+    }
+}
+
+impl Default for Canvas {
+    fn default() -> Self {
+        Self::new()
     }
 }

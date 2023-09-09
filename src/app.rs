@@ -1,12 +1,9 @@
 mod canvas;
+mod cmd_line;
 mod mode;
 mod shape;
 
-use self::{
-    canvas::{CanvasHandler, RenderState},
-    mode::ModeHandler,
-    shape::Shape,
-};
+use self::{canvas::Canvas, cmd_line::CmdLine, mode::ModeHandler, shape::Shape};
 use crate::util::{Size, UCoord};
 use crossterm::{
     event, execute,
@@ -27,17 +24,15 @@ pub enum AppOp {
 }
 
 /// The application
+#[derive(Default)]
 pub struct App {
-    canvas_handler: CanvasHandler,
+    canvas: Canvas,
     mode: ModeHandler,
 }
 
 impl App {
     pub fn new() -> Self {
-        App {
-            canvas_handler: CanvasHandler::default(),
-            mode: ModeHandler::default(),
-        }
+        App::default()
     }
 
     fn render(&mut self, f: &mut Frame<impl Backend>) {
@@ -53,9 +48,17 @@ impl App {
             .split(f.size());
 
         let canvas_size = Size::new(chunks1[0].width, chunks1[0].height);
-        let mut state = RenderState::new(self.mode.get(), canvas_size);
-        f.render_stateful_widget(&mut self.canvas_handler, chunks1[0], &mut state);
-        f.render_widget(self.mode.get(), chunks1[1]);
+        self.canvas.update_rendering_offset(canvas_size);
+        f.render_widget(self.canvas.shape_renderer(), chunks1[0]);
+        f.render_widget(
+            self.mode
+                .canvas_modifier(self.canvas.rendering_offset(), self.canvas.cursor().coord()),
+            chunks1[0],
+        );
+        f.render_widget(self.canvas.cursor_renderer(), chunks1[0]);
+
+        let cmd_line = self.mode.get().cmd_line();
+        f.render_widget(cmd_line, chunks1[1]);
     }
 
     /// Main loop
@@ -65,15 +68,13 @@ impl App {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
 
-            let canvas = self.canvas_handler.canvas_mut();
-            let canvas_cursor = canvas.cursor_mut();
-            let op = self.mode.process_event(event, canvas_cursor);
+            let op = self.mode.process_event(event, &self.canvas.cursor());
 
             match op {
                 QuitApp => break,
-                MakeShape(c, s) => canvas.add_shape(c, s),
-                MoveCanvasCursor(d) => canvas_cursor.move_next(d),
-                SetCanvasCursor(c) => canvas_cursor.move_to(c),
+                MakeShape(c, s) => self.canvas.add_shape(c, s),
+                MoveCanvasCursor(d) => self.canvas.move_cursor(d),
+                SetCanvasCursor(c) => self.canvas.set_cursor(c),
                 Nop => {}
             }
         }
@@ -95,11 +96,5 @@ impl App {
         disable_raw_mode().unwrap();
         execute!(terminal.backend_mut(), LeaveAlternateScreen,).unwrap();
         terminal.show_cursor().unwrap();
-    }
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
     }
 }
