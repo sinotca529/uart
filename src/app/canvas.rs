@@ -88,16 +88,16 @@ impl CanvasHandler {
     /// This method must be called before rendering canvas.
     pub fn update_rendering_offset(&mut self, canvas_size: Size) {
         //
-        //       Canvas
-        //      ┌─────────────────────────┐
-        //      │  Rendering area         │
-        //      │  ┌───────────────────┐  │
-        //      │  │                   │  │
-        //      │  └───────────────────┘  │
-        //      └─────────────────────────┘
-        // --------+-------------------+-------> x
-        //         P                  P+W
-        //   (Prev offset)
+        //     Canvas
+        //    ┌─────────────────────────┐
+        //    │      Rendering area     │
+        //    │      ┌───────────────┐  │
+        //    │      │               │  │
+        //    │      └───────────────┘  │
+        //    └─────────────────────────┘
+        // ---+------+----------------+-----> x
+        //    0      P               P+W
+        //      (Prev offset)
         //
         //
         //  Cursor Pos Range  | Next offset
