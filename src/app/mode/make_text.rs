@@ -1,18 +1,18 @@
+use super::{normal::NormalMode, Mode};
+use crate::{
+    app::{
+        canvas::cursor::Cursor,
+        shape::{text::Text, Shape},
+        AppOp,
+    },
+    util::UCoord,
+};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
 };
-
-use crate::{
-    canvas::shape::{text::Text, Shape},
-    controller::AppOp,
-    util::Coord,
-};
-
-use super::{normal::NormalMode, Mode, ModeIf};
-
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 enum Op {
@@ -39,12 +39,12 @@ impl From<Event> for Op {
 }
 
 pub struct MakeTextMode {
-    start_coord: Coord,
+    start_coord: UCoord,
     text: String,
 }
 
 impl MakeTextMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
+    pub fn new(canvas_cursor: UCoord) -> Self {
         Self {
             start_coord: canvas_cursor,
             text: String::new(),
@@ -52,48 +52,50 @@ impl MakeTextMode {
     }
 }
 
-impl ModeIf for MakeTextMode {
-    fn next(mut self, e: Event, mut canvas_cursor: Coord) -> (Mode, AppOp) {
+impl Mode for MakeTextMode {
+    fn next(mut self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
+        let mut cursor_coord = cursor.coord();
         match e.into() {
-            Op::Nop => (self.into(), AppOp::Nop),
+            Op::Nop => (self, AppOp::Nop),
             Op::MakeText => {
-                let mode = NormalMode.into();
-                let op = AppOp::MakeShape(self.start_coord, Text::new(self.text.clone()).into());
+                let mode = Box::new(NormalMode);
+                let text = Box::new(Text::new(self.text.clone()));
+                let op = AppOp::MakeShape(self.start_coord, text);
                 (mode, op)
             }
             Op::AddChar(c) => {
                 self.text.push(c);
-                canvas_cursor.x += UnicodeWidthChar::width(c).unwrap() as u16;
-                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
+                cursor_coord.x += UnicodeWidthChar::width(c).unwrap() as u16;
+                (self, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Enter => {
                 self.text.push('\n');
-                canvas_cursor.y += 1;
-                canvas_cursor.x = self.start_coord.x;
-                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
+                cursor_coord.y += 1;
+                cursor_coord.x = self.start_coord.x;
+                (self, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Backspace => {
                 let c = self.text.pop();
                 match c {
                     Some('\n') => {
-                        canvas_cursor.y -= 1;
-                        canvas_cursor.x +=
-                            UnicodeWidthStr::width(self.text.lines().last().unwrap_or("")) as u16;
+                        let last_line = self.text.lines().last().unwrap_or("");
+                        let last_line_width = UnicodeWidthStr::width(last_line) as u16;
+                        cursor_coord.y -= 1;
+                        cursor_coord.x += last_line_width;
                     }
                     Some(c) => {
-                        canvas_cursor.x -= UnicodeWidthChar::width(c).unwrap() as u16;
+                        cursor_coord.x -= UnicodeWidthChar::width(c).unwrap() as u16;
                     }
                     _ => {}
                 }
-                (self.into(), AppOp::SetCanvasCursor(canvas_cursor))
+                (self, AppOp::SetCanvasCursor(cursor_coord))
             }
         }
     }
 
-    fn additional_shapes(&self, _: Coord) -> Vec<(Coord, Shape)> {
+    fn additinal_canvas_shapes(&self, _: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         let text = Text::new(self.text.clone());
-        let s: Shape = text.into();
-        vec![(self.start_coord, s)]
+        vec![(self.start_coord, Box::new(text))]
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {
@@ -106,11 +108,5 @@ impl ModeIf for MakeTextMode {
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false })
-    }
-}
-
-impl From<MakeTextMode> for Mode {
-    fn from(val: MakeTextMode) -> Self {
-        Mode::MakeText(val)
     }
 }

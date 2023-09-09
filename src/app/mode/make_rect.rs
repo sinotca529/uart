@@ -1,3 +1,11 @@
+use crate::{
+    app::{
+        canvas::cursor::Cursor,
+        shape::{rect::Rect, Shape},
+        AppOp,
+    },
+    util::{Direction, Size, UCoord},
+};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
@@ -5,13 +13,7 @@ use tui::{
     widgets::{Paragraph, Wrap},
 };
 
-use crate::{
-    canvas::shape::{rect::Rect, Shape},
-    controller::AppOp,
-    util::{Coord, Direction, Size},
-};
-
-use super::{normal::NormalMode, Mode, ModeIf};
+use super::{normal::NormalMode, Mode};
 
 enum Op {
     MoveCursor(Direction),
@@ -39,47 +41,47 @@ impl From<Event> for Op {
 }
 
 pub struct MakeRectMode {
-    start_coord: Coord,
+    start_coord: UCoord,
 }
 
 impl MakeRectMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
+    pub fn new(canvas_cursor: UCoord) -> Self {
         Self {
             start_coord: canvas_cursor,
         }
     }
 
     /// Make rect
-    fn make_rect(a: Coord, b: Coord) -> (Coord, Rect) {
+    fn make_rect(a: UCoord, b: UCoord) -> (UCoord, Rect) {
         let w = a.x.abs_diff(b.x) + 1;
         let h = a.y.abs_diff(b.y) + 1;
         let rect = Rect::new(Size::new(w, h));
 
         let x = a.x.min(b.x);
         let y = a.y.min(b.y);
-        let start = Coord::new(x, y);
+        let start = UCoord::new(x, y);
 
         (start, rect)
     }
 }
 
-impl ModeIf for MakeRectMode {
-    fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp) {
+impl Mode for MakeRectMode {
+    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
-            Op::Nop => (self.into(), AppOp::Nop),
-            Op::MoveCursor(d) => (self.into(), AppOp::MoveCanvasCursor(d)),
+            Op::Nop => (self, AppOp::Nop),
+            Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::MakeRect => {
-                let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
-                let op = AppOp::MakeShape(start, rect.into());
-                let mode = NormalMode.into();
+                let (start, rect) = Self::make_rect(self.start_coord, cursor.coord());
+                let op = AppOp::MakeShape(start, Box::new(rect));
+                let mode = Box::new(NormalMode);
                 (mode, op)
             }
         }
     }
 
-    fn additional_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Shape)> {
+    fn additinal_canvas_shapes(&self, canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
         let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
-        vec![(start, rect.into())]
+        vec![(start, Box::new(rect))]
     }
 
     fn status_msg(&self) -> tui::widgets::Paragraph {
@@ -92,11 +94,5 @@ impl ModeIf for MakeRectMode {
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false })
-    }
-}
-
-impl From<MakeRectMode> for Mode {
-    fn from(val: MakeRectMode) -> Self {
-        Mode::MakeRect(val)
     }
 }

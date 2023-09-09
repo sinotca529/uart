@@ -1,4 +1,4 @@
-use super::{style::Style, Shape, ShapeIf};
+use super::{style::Style, Shape};
 use crate::util::*;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
@@ -45,14 +45,8 @@ impl ToString for Rect {
     }
 }
 
-impl ShapeIf for Rect {
+impl Shape for Rect {
     fn size(&self) -> Size {
         self.size
-    }
-}
-
-impl From<Rect> for Shape {
-    fn from(value: Rect) -> Self {
-        Shape::Rect(value)
     }
 }

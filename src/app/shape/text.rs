@@ -1,7 +1,6 @@
+use super::Shape;
 use crate::util::Size;
 use unicode_width::UnicodeWidthStr;
-
-use super::{Shape, ShapeIf};
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct Text {
@@ -20,7 +19,7 @@ impl ToString for Text {
     }
 }
 
-impl ShapeIf for Text {
+impl Shape for Text {
     fn size(&self) -> Size {
         let mut h = 0;
         let mut w = 0;
@@ -31,11 +30,5 @@ impl ShapeIf for Text {
         }
 
         Size::new(w, h)
-    }
-}
-
-impl From<Text> for Shape {
-    fn from(val: Text) -> Self {
-        Shape::Text(val)
     }
 }

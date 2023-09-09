@@ -1,7 +1,7 @@
-use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode, ModeIf};
+use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode};
 use crate::{
-    controller::AppOp,
-    util::{Coord, Direction},
+    app::{canvas::cursor::Cursor, AppOp},
+    util::Direction,
 };
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -59,17 +59,17 @@ impl Default for NormalMode {
     }
 }
 
-impl ModeIf for NormalMode {
-    fn next(self, e: Event, canvas_cursor: Coord) -> (Mode, AppOp) {
+impl Mode for NormalMode {
+    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::EnterCmd => {
-                let cmd = CmdMode::new().into();
+                let cmd = Box::new(CmdMode::new());
                 (cmd, AppOp::Nop)
             }
-            Op::Nop => (self.into(), AppOp::Nop),
-            Op::MoveCursor(d) => (self.into(), AppOp::MoveCanvasCursor(d)),
-            Op::EnterMakeRect => (MakeRectMode::new(canvas_cursor).into(), AppOp::Nop),
-            Op::EnterMakeText => (MakeTextMode::new(canvas_cursor).into(), AppOp::Nop),
+            Op::Nop => (self, AppOp::Nop),
+            Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
+            Op::EnterMakeRect => (Box::new(MakeRectMode::new(cursor.coord())), AppOp::Nop),
+            Op::EnterMakeText => (Box::new(MakeTextMode::new(cursor.coord())), AppOp::Nop),
         }
     }
 
@@ -83,11 +83,5 @@ impl ModeIf for NormalMode {
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: false })
-    }
-}
-
-impl From<NormalMode> for Mode {
-    fn from(val: NormalMode) -> Self {
-        Mode::Norm(val)
     }
 }
