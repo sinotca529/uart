@@ -5,11 +5,10 @@ mod shape;
 
 use self::{
     canvas::{Canvas, CanvasRenderingState},
-    cmd_line::CmdLine,
     mode::ModeHandler,
     shape::Shape,
 };
-use crate::util::{Size, UCoord};
+use crate::util::{Coord, Size};
 use crossterm::{
     event, execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -21,9 +20,9 @@ use tui::{
 };
 
 pub enum AppOp {
-    MakeShape(UCoord, Box<dyn Shape>),
+    MakeShape(Coord, Box<dyn Shape>),
     MoveCanvasCursor(crate::util::Direction),
-    SetCanvasCursor(UCoord),
+    SetCanvasCursor(Coord),
     QuitApp,
     Nop,
 }

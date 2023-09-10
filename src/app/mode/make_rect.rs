@@ -4,7 +4,7 @@ use crate::{
         shape::{rect::Rect, Shape},
         AppOp,
     },
-    util::{Direction, Size, UCoord},
+    util::{Coord, Direction, Size},
 };
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -41,25 +41,25 @@ impl From<Event> for Op {
 }
 
 pub struct MakeRectMode {
-    start_coord: UCoord,
+    start_coord: Coord,
 }
 
 impl MakeRectMode {
-    pub fn new(canvas_cursor: UCoord) -> Self {
+    pub fn new(canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
         }
     }
 
     /// Make rect
-    fn make_rect(a: UCoord, b: UCoord) -> (UCoord, Rect) {
+    fn make_rect(a: Coord, b: Coord) -> (Coord, Rect) {
         let w = a.x.abs_diff(b.x) + 1;
         let h = a.y.abs_diff(b.y) + 1;
         let rect = Rect::new(Size::new(w, h));
 
         let x = a.x.min(b.x);
         let y = a.y.min(b.y);
-        let start = UCoord::new(x, y);
+        let start = Coord::new(x, y);
 
         (start, rect)
     }
@@ -79,7 +79,7 @@ impl Mode for MakeRectMode {
         }
     }
 
-    fn additinal_canvas_shapes(&self, canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
+    fn additinal_canvas_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor);
         vec![(start, Box::new(rect))]
     }
