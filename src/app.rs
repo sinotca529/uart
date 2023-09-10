@@ -3,11 +3,7 @@ mod cmd_line;
 mod mode;
 mod shape;
 
-use self::{
-    canvas::{Canvas, CanvasRenderingState},
-    mode::ModeHandler,
-    shape::Shape,
-};
+use self::{canvas::CanvasHandler, mode::ModeHandler, shape::Shape};
 use crate::util::{Coord, Size};
 use crossterm::{
     event, execute,
@@ -30,7 +26,7 @@ pub enum AppOp {
 /// The application
 #[derive(Default)]
 pub struct App {
-    canvas: Canvas,
+    canvas_handler: CanvasHandler,
     mode: ModeHandler,
 }
 
@@ -51,16 +47,18 @@ impl App {
             )
             .split(f.size());
 
+        // Render canvas
         let canvas_size = Size::new(chunks1[0].width, chunks1[0].height);
+        let additional_shapes = self
+            .mode
+            .get()
+            .additinal_canvas_shapes(self.canvas_handler.cursor_coord());
 
-        let mut crs = CanvasRenderingState::new(
-            canvas_size,
-            self.mode
-                .get()
-                .additinal_canvas_shapes(self.canvas.cursor().coord()),
-        );
-        f.render_stateful_widget(&mut self.canvas, chunks1[0], &mut crs);
+        self.canvas_handler.set_rendering_size(canvas_size);
+        self.canvas_handler.set_additional_shapes(additional_shapes);
+        f.render_widget(&mut self.canvas_handler, chunks1[0]);
 
+        // Render command line
         let cmd_line = self.mode.get().cmd_line();
         f.render_widget(cmd_line, chunks1[1]);
     }
@@ -72,13 +70,13 @@ impl App {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
 
-            let op = self.mode.process_event(event, self.canvas.cursor());
+            let op = self.mode.process_event(event, self.canvas_handler.cursor());
 
             match op {
                 QuitApp => break,
-                MakeShape(c, s) => self.canvas.add_shape(c, s),
-                MoveCanvasCursor(d) => self.canvas.move_cursor(d),
-                SetCanvasCursor(c) => self.canvas.set_cursor(c),
+                MakeShape(c, s) => self.canvas_handler.add_shape(c, s),
+                MoveCanvasCursor(d) => self.canvas_handler.move_cursor(d),
+                SetCanvasCursor(c) => self.canvas_handler.set_cursor(c),
                 Nop => {}
             }
         }
