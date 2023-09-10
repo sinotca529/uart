@@ -163,9 +163,18 @@ impl Widget for &mut CanvasHandler {
 
         // Render shapes.
         // id is used as z-index (ref: BTreeMap::iter)
-        for (coord, shape) in self.canvas.shapes().chain(self.additional_shapes.iter()) {
+        for (id, (coord, shape)) in &self.canvas.shapes {
             let offset_from_area = coord.offset(self.rendering_offset);
-            shape.render(offset_from_area, area, buf);
+            let color = if self.selected_shapes.contains(id) {
+                Color::Blue
+            } else {
+                Color::White
+            };
+            shape.render(offset_from_area, area, buf, color);
+        }
+        for (coord, shape) in self.additional_shapes.iter() {
+            let offset_from_area = coord.offset(self.rendering_offset);
+            shape.render(offset_from_area, area, buf, Color::White);
         }
 
         // Render cursor.
