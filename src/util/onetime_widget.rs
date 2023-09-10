@@ -1,15 +1,15 @@
-use tui::widgets::Widget;
+use ratatui::widgets::Widget;
 
 pub struct OnetimeWidget<F>
 where
-    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+    F: FnOnce(ratatui::layout::Rect, &mut ratatui::buffer::Buffer),
 {
     render: F,
 }
 
 impl<F> OnetimeWidget<F>
 where
-    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+    F: FnOnce(ratatui::layout::Rect, &mut ratatui::buffer::Buffer),
 {
     pub fn new(render: F) -> Self {
         Self { render }
@@ -18,9 +18,9 @@ where
 
 impl<F> Widget for OnetimeWidget<F>
 where
-    F: FnOnce(tui::layout::Rect, &mut tui::buffer::Buffer),
+    F: FnOnce(ratatui::layout::Rect, &mut ratatui::buffer::Buffer),
 {
-    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(self, area: ratatui::layout::Rect, buf: &mut ratatui::buffer::Buffer) {
         (self.render)(area, buf);
     }
 }

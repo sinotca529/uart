@@ -1,4 +1,4 @@
-use tui::{
+use ratatui::{
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Widget},
 };
@@ -13,7 +13,7 @@ impl<'a> CmdLine<'a> {
 }
 
 impl<'a> Widget for CmdLine<'a> {
-    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(self, area: ratatui::layout::Rect, buf: &mut ratatui::buffer::Buffer) {
         let cmd_line = Block::default()
             .borders(Borders::NONE)
             .style(Style::default().bg(Color::Rgb(50, 50, 50)));
