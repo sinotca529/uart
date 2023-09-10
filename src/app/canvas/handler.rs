@@ -3,8 +3,8 @@ use crate::{
     app::shape::Shape,
     util::{Coord, Direction, Size},
 };
-use std::collections::HashSet;
 use ratatui::{style::Color, widgets::Widget};
+use std::collections::HashSet;
 
 /// Canvas handler
 ///
