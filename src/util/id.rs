@@ -11,12 +11,18 @@ pub struct IdGenerator<Tag> {
     _phantom: PhantomData<fn() -> Tag>,
 }
 
-impl<Tag> IdGenerator<Tag> {
-    pub fn new() -> Self {
+impl<Tag> Default for IdGenerator<Tag> {
+    fn default() -> Self {
         Self {
             next_id: 0,
             _phantom: Default::default(),
         }
+    }
+}
+
+impl<Tag> IdGenerator<Tag> {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn gen(&mut self) -> Id<Tag> {
