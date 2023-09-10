@@ -1,7 +1,7 @@
 use super::{normal::NormalMode, Mode};
 use crate::app::{canvas::CanvasHandler, AppOp};
 use crossterm::event::{Event, KeyCode};
-use tui::{
+use ratatui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
@@ -80,8 +80,8 @@ impl Mode for CmdMode {
         }
     }
 
-    fn status_msg(&self) -> tui::widgets::Paragraph {
-        let t = tui::text::Text::raw(self.cmd.clone());
+    fn status_msg(&self) -> ratatui::widgets::Paragraph {
+        let t = ratatui::text::Text::raw(self.cmd.clone());
         Paragraph::new(t)
             .style(
                 Style::default()
