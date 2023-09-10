@@ -183,6 +183,6 @@ impl Widget for &mut CanvasHandler {
             (area.x as i16 + cursor.x() - self.rendering_offset.x) as u16,
             (area.y as i16 + cursor.y() - self.rendering_offset.y) as u16,
         )
-        .set_bg(Color::Rgb(128, 128, 128));
+        .set_bg(Color::DarkGray);
     }
 }
