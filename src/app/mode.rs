@@ -8,7 +8,7 @@ use self::normal::NormalMode;
 use super::{canvas::CanvasHandler, cmd_line::CmdLine, shape::Shape, AppOp};
 use crate::util::Coord;
 use crossterm::event::Event;
-use tui::widgets::Paragraph;
+use ratatui::widgets::Paragraph;
 
 pub trait Mode {
     fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp);

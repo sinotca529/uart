@@ -3,7 +3,7 @@ pub mod style;
 pub mod text;
 
 use crate::util::{Coord, Size};
-use tui::{
+use ratatui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Widget},
@@ -16,8 +16,8 @@ pub trait Shape: ToString {
     fn render(
         &self,
         offset: Coord,
-        area: tui::layout::Rect,
-        buf: &mut tui::buffer::Buffer,
+        area: ratatui::layout::Rect,
+        buf: &mut ratatui::buffer::Buffer,
         color: Color,
     ) {
         //
@@ -89,13 +89,13 @@ pub trait Shape: ToString {
             .collect();
 
         // Render
-        let shape_area = tui::layout::Rect::new(
+        let shape_area = ratatui::layout::Rect::new(
             area.x + 0.max(offset.x) as u16,
             area.y + 0.max(offset.y) as u16,
             x_range.len() as u16,
             y_range.len() as u16,
         );
-        let t: tui::text::Text = cut.into();
+        let t: ratatui::text::Text = cut.into();
 
         let style = Style::default().fg(color);
         let p = Paragraph::new(t).alignment(Alignment::Left).style(style);

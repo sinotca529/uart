@@ -4,7 +4,7 @@ use crate::{
     util::{Coord, Direction, Size},
 };
 use std::collections::HashSet;
-use tui::{style::Color, widgets::Widget};
+use ratatui::{style::Color, widgets::Widget};
 
 /// Canvas handler
 ///
@@ -158,7 +158,7 @@ impl CanvasHandler {
 }
 
 impl Widget for &mut CanvasHandler {
-    fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(self, area: ratatui::layout::Rect, buf: &mut ratatui::buffer::Buffer) {
         self.update_rendering_offset();
 
         // Render shapes.
