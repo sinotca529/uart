@@ -2,7 +2,7 @@ pub mod rect;
 pub mod style;
 pub mod text;
 
-use crate::util::{make_area, ICoord, Size, UCoord};
+use crate::util::{Coord, Size};
 use tui::{
     layout::Alignment,
     widgets::{Paragraph, Widget},
@@ -12,7 +12,7 @@ use unicode_width::UnicodeWidthChar;
 pub trait Shape: ToString {
     fn size(&self) -> Size;
 
-    fn render(&self, offset: ICoord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(&self, offset: Coord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         //
         // offset > 0
         //
@@ -82,13 +82,12 @@ pub trait Shape: ToString {
             .collect();
 
         // Render
-        let upper_left = UCoord::new(
+        let shape_area = tui::layout::Rect::new(
             area.x + 0.max(offset.x) as u16,
             area.y + 0.max(offset.y) as u16,
+            x_range.len() as u16,
+            y_range.len() as u16,
         );
-        let size = Size::new(x_range.len() as u16, y_range.len() as u16);
-        let shape_area = make_area(&upper_left, &size);
-
         let t: tui::text::Text = cut.into();
         let p = Paragraph::new(t).alignment(Alignment::Left);
 

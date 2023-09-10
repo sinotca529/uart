@@ -5,7 +5,7 @@ mod normal;
 
 use self::normal::NormalMode;
 use super::{canvas::cursor::Cursor, cmd_line::CmdLine, shape::Shape, AppOp};
-use crate::util::UCoord;
+use crate::util::Coord;
 use crossterm::event::Event;
 use tui::widgets::Paragraph;
 
@@ -13,7 +13,7 @@ pub trait Mode {
     fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp);
 
     /// Additional shapes to render on the canvas.
-    fn additinal_canvas_shapes(&self, _canvas_cursor: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
+    fn additinal_canvas_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         vec![]
     }
 
