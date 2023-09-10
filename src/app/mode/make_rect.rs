@@ -1,6 +1,6 @@
 use crate::{
     app::{
-        canvas::cursor::Cursor,
+        canvas::CanvasHandler,
         shape::{rect::Rect, Shape},
         AppOp,
     },
@@ -66,12 +66,13 @@ impl MakeRectMode {
 }
 
 impl Mode for MakeRectMode {
-    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
+    fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::MakeRect => {
-                let (start, rect) = Self::make_rect(self.start_coord, cursor.coord());
+                let (start, rect) =
+                    Self::make_rect(self.start_coord, canvas_handler.cursor_coord());
                 let op = AppOp::MakeShape(start, Box::new(rect));
                 let mode = Box::new(NormalMode);
                 (mode, op)

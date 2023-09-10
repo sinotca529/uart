@@ -21,10 +21,6 @@ impl<Tag> Default for IdGenerator<Tag> {
 }
 
 impl<Tag> IdGenerator<Tag> {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     pub fn gen(&mut self) -> Id<Tag> {
         let id = Id {
             id: self.next_id,

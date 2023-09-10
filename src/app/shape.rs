@@ -93,4 +93,34 @@ pub trait Shape: ToString {
 
         p.render(shape_area, buf);
     }
+
+    /// Return true if there is some character at `coord`.
+    fn hit(&self, coord: Coord) -> bool {
+        let s = self.to_string();
+        let Some(line_y) = s.lines().nth(coord.y as usize) else {
+            return false;
+        };
+
+        let char_xy = line_y
+            .chars()
+            .scan(-1, |width, c| {
+                // width : offset of the end of the char (0-origin).
+                //    abあc -> (0, a), (1, b), (3, あ), (4, c)
+                let delta = UnicodeWidthChar::width(c).unwrap() as i16;
+                *width += delta;
+
+                // Replace a full-width (全角) char at the edge of the screen with a space.
+                if delta == 2 && *width == coord.x {
+                    Some((*width, ' '))
+                } else {
+                    Some((*width, c))
+                }
+            })
+            .skip_while(|&(width, _)| width < coord.x)
+            .map(|(_, c)| c)
+            .next()
+            .unwrap_or(' ');
+
+        char_xy != ' '
+    }
 }

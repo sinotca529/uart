@@ -1,6 +1,8 @@
-use super::{command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, Mode};
+use super::{
+    command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, select::SelectMode, Mode,
+};
 use crate::{
-    app::{canvas::cursor::Cursor, AppOp},
+    app::{canvas::CanvasHandler, AppOp},
     util::Direction,
 };
 use crossterm::event::{Event, KeyCode};
@@ -20,6 +22,8 @@ enum Op {
     EnterMakeText,
     /// Move Cursor
     MoveCursor(Direction),
+    /// Toggle the selection state of the shape directly under the cursor.
+    ToggleShapeSelect,
     /// Do nothing.
     Nop,
 }
@@ -36,6 +40,7 @@ impl From<Event> for Op {
                     'l' => Op::MoveCursor(Direction::Right),
                     'r' => Op::EnterMakeRect,
                     't' => Op::EnterMakeText,
+                    ' ' => Op::ToggleShapeSelect,
                     _ => Op::Nop,
                 },
                 _ => Op::Nop,
@@ -60,7 +65,8 @@ impl Default for NormalMode {
 }
 
 impl Mode for NormalMode {
-    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
+    fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
+        let cursor = canvas_handler.cursor();
         match e.into() {
             Op::EnterCmd => {
                 let cmd = Box::new(CmdMode::new());
@@ -70,6 +76,13 @@ impl Mode for NormalMode {
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::EnterMakeRect => (Box::new(MakeRectMode::new(cursor.coord())), AppOp::Nop),
             Op::EnterMakeText => (Box::new(MakeTextMode::new(cursor.coord())), AppOp::Nop),
+            Op::ToggleShapeSelect => {
+                if canvas_handler.cursor_hits_shape() {
+                    (Box::new(SelectMode::new()), AppOp::ToggleShapeSelect)
+                } else {
+                    (self, AppOp::Nop)
+                }
+            }
         }
     }
 

@@ -1,13 +1,12 @@
 pub mod cursor;
 pub mod handler;
 
-pub use handler::*;
-
 use self::cursor::Cursor;
 use crate::{
     app::shape::Shape,
     util::{Coord, Direction, Id, IdGenerator},
 };
+pub use handler::*;
 use std::collections::BTreeMap;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
@@ -46,5 +45,15 @@ impl Canvas {
 
     pub fn set_cursor(&mut self, coord: Coord) {
         self.cursor.move_to(coord);
+    }
+
+    fn move_shape(&mut self, id: ShapeId, dir: Direction) {
+        if let Some((c, _)) = self.shapes.get_mut(&id) {
+            *c = c.adjacency(dir);
+        }
+    }
+
+    fn delete_shape(&mut self, id: ShapeId) {
+        self.shapes.remove(&id);
     }
 }
