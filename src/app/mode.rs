@@ -2,15 +2,16 @@ mod command;
 mod make_rect;
 mod make_text;
 mod normal;
+mod select;
 
 use self::normal::NormalMode;
-use super::{canvas::cursor::Cursor, cmd_line::CmdLine, shape::Shape, AppOp};
+use super::{canvas::CanvasHandler, cmd_line::CmdLine, shape::Shape, AppOp};
 use crate::util::Coord;
 use crossterm::event::Event;
 use tui::widgets::Paragraph;
 
 pub trait Mode {
-    fn next(self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp);
+    fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp);
 
     /// Additional shapes to render on the canvas.
     fn additinal_canvas_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
@@ -34,10 +35,10 @@ impl Default for ModeHandler {
 }
 
 impl ModeHandler {
-    pub fn process_event(&mut self, event: Event, cursor: &Cursor) -> AppOp {
+    pub fn process_event(&mut self, event: Event, canvas_handler: &CanvasHandler) -> AppOp {
         unsafe {
             let current_mode: Box<dyn Mode> = std::ptr::read(&self.0);
-            let (next_mode, app_op) = current_mode.next(event, cursor);
+            let (next_mode, app_op) = current_mode.next(event, canvas_handler);
             std::ptr::write(&mut self.0, next_mode);
             app_op
         }

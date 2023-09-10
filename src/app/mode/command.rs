@@ -1,5 +1,5 @@
 use super::{normal::NormalMode, Mode};
-use crate::app::{canvas::cursor::Cursor, AppOp};
+use crate::app::{canvas::CanvasHandler, AppOp};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
@@ -52,7 +52,7 @@ impl Default for CmdMode {
 }
 
 impl Mode for CmdMode {
-    fn next(mut self: Box<Self>, e: Event, _: &Cursor) -> (Box<dyn Mode>, AppOp) {
+    fn next(mut self: Box<Self>, e: Event, _: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Enter => {
                 let app_op = if self.cmd == ":q" {

@@ -1,7 +1,7 @@
 use super::{normal::NormalMode, Mode};
 use crate::{
     app::{
-        canvas::cursor::Cursor,
+        canvas::CanvasHandler,
         shape::{text::Text, Shape},
         AppOp,
     },
@@ -53,8 +53,12 @@ impl MakeTextMode {
 }
 
 impl Mode for MakeTextMode {
-    fn next(mut self: Box<Self>, e: Event, cursor: &Cursor) -> (Box<dyn Mode>, AppOp) {
-        let mut cursor_coord = cursor.coord();
+    fn next(
+        mut self: Box<Self>,
+        e: Event,
+        canvas_handler: &CanvasHandler,
+    ) -> (Box<dyn Mode>, AppOp) {
+        let mut cursor_coord = canvas_handler.cursor_coord();
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MakeText => {

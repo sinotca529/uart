@@ -5,6 +5,7 @@ pub mod text;
 use crate::util::{Coord, Size};
 use tui::{
     layout::Alignment,
+    style::{Color, Style},
     widgets::{Paragraph, Widget},
 };
 use unicode_width::UnicodeWidthChar;
@@ -12,7 +13,13 @@ use unicode_width::UnicodeWidthChar;
 pub trait Shape: ToString {
     fn size(&self) -> Size;
 
-    fn render(&self, offset: Coord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(
+        &self,
+        offset: Coord,
+        area: tui::layout::Rect,
+        buf: &mut tui::buffer::Buffer,
+        color: Color,
+    ) {
         //
         // offset > 0
         //
@@ -89,8 +96,39 @@ pub trait Shape: ToString {
             y_range.len() as u16,
         );
         let t: tui::text::Text = cut.into();
-        let p = Paragraph::new(t).alignment(Alignment::Left);
 
+        let style = Style::default().fg(color);
+        let p = Paragraph::new(t).alignment(Alignment::Left).style(style);
         p.render(shape_area, buf);
+    }
+
+    /// Return true if there is some character at `coord`.
+    fn hit(&self, coord: Coord) -> bool {
+        let s = self.to_string();
+        let Some(line_y) = s.lines().nth(coord.y as usize) else {
+            return false;
+        };
+
+        let char_xy = line_y
+            .chars()
+            .scan(-1, |width, c| {
+                // width : offset of the end of the char (0-origin).
+                //    abあc -> (0, a), (1, b), (3, あ), (4, c)
+                let delta = UnicodeWidthChar::width(c).unwrap() as i16;
+                *width += delta;
+
+                // Replace a full-width (全角) char at the edge of the screen with a space.
+                if delta == 2 && *width == coord.x {
+                    Some((*width, ' '))
+                } else {
+                    Some((*width, c))
+                }
+            })
+            .skip_while(|&(width, _)| width < coord.x)
+            .map(|(_, c)| c)
+            .next()
+            .unwrap_or(' ');
+
+        char_xy != ' '
     }
 }
