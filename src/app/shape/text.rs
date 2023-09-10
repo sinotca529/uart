@@ -1,5 +1,5 @@
 use super::Shape;
-use crate::util::Size;
+use crate::util::{Coord, Size};
 use unicode_width::UnicodeWidthStr;
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
@@ -30,5 +30,17 @@ impl Shape for Text {
         }
 
         Size::new(w, h)
+    }
+
+    fn hit(&self, coord: Coord) -> bool {
+        if coord.x < 0 || coord.y < 0 {
+            return false;
+        }
+
+        if let Some(line_y) = self.s.lines().nth(coord.y as usize) {
+            return coord.x < UnicodeWidthStr::width(line_y) as i16;
+        }
+
+        false
     }
 }

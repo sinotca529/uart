@@ -49,4 +49,9 @@ impl Shape for Rect {
     fn size(&self) -> Size {
         self.size
     }
+
+    fn hit(&self, coord: Coord) -> bool {
+        (0..self.size.width as i16).contains(&coord.x)
+            && (0..self.size.height as i16).contains(&coord.y)
+    }
 }
