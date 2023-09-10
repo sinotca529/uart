@@ -31,10 +31,6 @@ impl Canvas {
         assert!(old.is_none());
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = &(Coord, Box<dyn Shape>)> {
-        self.shapes.iter().map(|e| e.1)
-    }
-
     pub fn cursor(&self) -> &Cursor {
         &self.cursor
     }

@@ -5,6 +5,7 @@ pub mod text;
 use crate::util::{Coord, Size};
 use tui::{
     layout::Alignment,
+    style::{Color, Style},
     widgets::{Paragraph, Widget},
 };
 use unicode_width::UnicodeWidthChar;
@@ -12,7 +13,13 @@ use unicode_width::UnicodeWidthChar;
 pub trait Shape: ToString {
     fn size(&self) -> Size;
 
-    fn render(&self, offset: Coord, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(
+        &self,
+        offset: Coord,
+        area: tui::layout::Rect,
+        buf: &mut tui::buffer::Buffer,
+        color: Color,
+    ) {
         //
         // offset > 0
         //
@@ -89,8 +96,9 @@ pub trait Shape: ToString {
             y_range.len() as u16,
         );
         let t: tui::text::Text = cut.into();
-        let p = Paragraph::new(t).alignment(Alignment::Left);
 
+        let style = Style::default().fg(color);
+        let p = Paragraph::new(t).alignment(Alignment::Left).style(style);
         p.render(shape_area, buf);
     }
 
