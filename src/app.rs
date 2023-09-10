@@ -19,6 +19,10 @@ pub enum AppOp {
     MakeShape(Coord, Box<dyn Shape>),
     MoveCanvasCursor(crate::util::Direction),
     SetCanvasCursor(Coord),
+    ToggleShapeSelect,
+    DeleteSelectedShapes,
+    MoveSlectedShapes(crate::util::Direction),
+    UnselectAllShape,
     QuitApp,
     Nop,
 }
@@ -70,13 +74,17 @@ impl App {
             terminal.draw(|f| self.render(f)).unwrap();
             let event = event::read().unwrap();
 
-            let op = self.mode.process_event(event, self.canvas_handler.cursor());
+            let op = self.mode.process_event(event, &self.canvas_handler);
 
             match op {
                 QuitApp => break,
                 MakeShape(c, s) => self.canvas_handler.add_shape(c, s),
                 MoveCanvasCursor(d) => self.canvas_handler.move_cursor(d),
                 SetCanvasCursor(c) => self.canvas_handler.set_cursor(c),
+                ToggleShapeSelect => self.canvas_handler.toggle_select(),
+                DeleteSelectedShapes => self.canvas_handler.delete_selected_shapes(),
+                MoveSlectedShapes(d) => self.canvas_handler.move_selected_shapes(d),
+                UnselectAllShape => self.canvas_handler.unselect_all_shape(),
                 Nop => {}
             }
         }

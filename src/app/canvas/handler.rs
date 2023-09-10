@@ -1,10 +1,10 @@
-use tui::{style::Color, widgets::Widget};
-
-use super::{cursor::Cursor, Canvas};
+use super::{cursor::Cursor, Canvas, ShapeId};
 use crate::{
     app::shape::Shape,
     util::{Coord, Direction, Size},
 };
+use std::collections::HashSet;
+use tui::{style::Color, widgets::Widget};
 
 /// Canvas handler
 ///
@@ -16,6 +16,7 @@ pub struct CanvasHandler {
     rendering_offset: Coord,
     rendering_size: Size,
     additional_shapes: Vec<(Coord, Box<dyn Shape>)>,
+    selected_shapes: HashSet<ShapeId>,
 }
 
 impl CanvasHandler {
@@ -38,7 +39,10 @@ impl CanvasHandler {
     pub fn cursor_coord(&self) -> Coord {
         self.canvas.cursor().coord()
     }
+}
 
+// Methods for rendering.
+impl CanvasHandler {
     pub fn set_rendering_size(&mut self, size: Size) {
         self.rendering_size = size;
     }
@@ -91,6 +95,65 @@ impl CanvasHandler {
                 self.rendering_size.height as i16,
             ),
         };
+    }
+}
+
+// Methods for select shapes.
+impl CanvasHandler {
+    /// Id of the shape directly under the cursor.
+    fn shape_id_under_the_cursor(&self) -> Option<ShapeId> {
+        // Use the iterator in reverse order to select the most front figure.
+        self.canvas
+            .shapes
+            .iter()
+            .rev()
+            .find(|(_, (coord, shape))| {
+                let c = self.canvas.cursor.coord().offset(*coord);
+                shape.hit(c)
+            })
+            .map(|(id, _)| *id)
+    }
+
+    pub fn cursor_hits_shape(&self) -> bool {
+        self.shape_id_under_the_cursor().is_some()
+    }
+
+    pub fn will_toggle_last_selected_shape(&self) -> bool {
+        if self.selected_shapes.len() == 1 {
+            if let Some(id) = self.shape_id_under_the_cursor() {
+                self.selected_shapes.contains(&id)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    /// Change the selection state of the shape directly under the cursor.
+    pub fn toggle_select(&mut self) {
+        self.shape_id_under_the_cursor().iter().for_each(|id| {
+            if !self.selected_shapes.remove(id) {
+                self.selected_shapes.insert(*id);
+            }
+        })
+    }
+
+    pub fn move_selected_shapes(&mut self, dir: Direction) {
+        self.selected_shapes.iter().for_each(|id| {
+            self.canvas.move_shape(*id, dir);
+        });
+    }
+
+    pub fn delete_selected_shapes(&mut self) {
+        self.selected_shapes.iter().for_each(|id| {
+            self.canvas.delete_shape(*id);
+        });
+        self.selected_shapes.clear();
+    }
+
+    pub fn unselect_all_shape(&mut self) {
+        self.selected_shapes.clear();
     }
 }
 
