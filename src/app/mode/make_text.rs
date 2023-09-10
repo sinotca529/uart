@@ -5,7 +5,7 @@ use crate::{
         shape::{text::Text, Shape},
         AppOp,
     },
-    util::UCoord,
+    util::Coord,
 };
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -39,12 +39,12 @@ impl From<Event> for Op {
 }
 
 pub struct MakeTextMode {
-    start_coord: UCoord,
+    start_coord: Coord,
     text: String,
 }
 
 impl MakeTextMode {
-    pub fn new(canvas_cursor: UCoord) -> Self {
+    pub fn new(canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
             text: String::new(),
@@ -65,7 +65,7 @@ impl Mode for MakeTextMode {
             }
             Op::AddChar(c) => {
                 self.text.push(c);
-                cursor_coord.x += UnicodeWidthChar::width(c).unwrap() as u16;
+                cursor_coord.x += UnicodeWidthChar::width(c).unwrap() as i16;
                 (self, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Enter => {
@@ -79,12 +79,12 @@ impl Mode for MakeTextMode {
                 match c {
                     Some('\n') => {
                         let last_line = self.text.lines().last().unwrap_or("");
-                        let last_line_width = UnicodeWidthStr::width(last_line) as u16;
+                        let last_line_width = UnicodeWidthStr::width(last_line) as i16;
                         cursor_coord.y -= 1;
                         cursor_coord.x += last_line_width;
                     }
                     Some(c) => {
-                        cursor_coord.x -= UnicodeWidthChar::width(c).unwrap() as u16;
+                        cursor_coord.x -= UnicodeWidthChar::width(c).unwrap() as i16;
                     }
                     _ => {}
                 }
@@ -93,7 +93,7 @@ impl Mode for MakeTextMode {
         }
     }
 
-    fn additinal_canvas_shapes(&self, _: UCoord) -> Vec<(UCoord, Box<dyn Shape>)> {
+    fn additinal_canvas_shapes(&self, _: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         let text = Text::new(self.text.clone());
         vec![(self.start_coord, Box::new(text))]
     }
