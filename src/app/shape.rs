@@ -2,13 +2,13 @@ pub mod rect;
 pub mod style;
 pub mod text;
 
-use crate::util::{Coord, Size};
+use crate::util::{Coord, IterExt, Size, StrExt};
 use ratatui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Widget},
 };
-use unicode_width::UnicodeWidthChar;
+use std::ops::Range;
 
 pub trait Shape: ToString {
     fn size(&self) -> Size;
@@ -27,10 +27,10 @@ pub trait Shape: ToString {
         //    ┌────────────────────────┐
         //    │                        │
         //    │<---------- a --------->│
-        //    │       <-------- w -----│---->
+        //    │       <-------- s -----│---->
         //    │<- o ->┌────────────────│─────┐
         //    │       └────────────────│─────┘
-        //    │       <- min(a-o, w) ->│
+        //    │       <- min(a-o, s) ->│
         //    │                        │
         //
         //
@@ -41,17 +41,19 @@ pub trait Shape: ToString {
         //   <- (-o) ->│<---------- a --------->│
         //   ┌─────────│────────────────────────│─────┐
         //   └─────────│────────────────────────│─────┘
-        //   <---------│-------- w -------------│----->
-        //   <---------│-- min(a-o, w) -------->│
+        //   <---------│-------- s -------------│----->
+        //   <---------│-- min(a-o, s) -------->│
         //             │                        │
         //
         //
-        // => range_to_render = [max(0, -o), min(a-o, w) - 1]
-
-        let x_range =
-            0.max(-offset.x)..(area.width as i16 - offset.x).min(self.size().width as i16);
-        let y_range =
-            0.max(-offset.y)..(area.height as i16 - offset.y).min(self.size().height as i16);
+        // => range_to_render = max(0, -o)..min(a-o, s)
+        let range_to_render = |offset: i16, area: u16, size: u16| -> Range<usize> {
+            let start = 0.max(-offset) as usize;
+            let end = (area as i16 - offset).min(size as i16).max(0) as usize;
+            start..end
+        };
+        let x_range = range_to_render(offset.x, area.width, self.size().width);
+        let y_range = range_to_render(offset.y, area.height, self.size().height);
 
         // Skip if the shape is out of the area.
         if x_range.is_empty() || y_range.is_empty() {
@@ -61,31 +63,8 @@ pub trait Shape: ToString {
         let cut: String = self
             .to_string()
             .lines()
-            // cut top/bottom
-            .skip(y_range.start as usize)
-            .take(y_range.len())
-            // cut left/right
-            .map(|l| {
-                l.chars()
-                    .scan(-1, |width, c| {
-                        // width : offset of the end of the char (0-origin).
-                        //    abあc -> (0, a), (1, b), (3, あ), (4, c)
-                        let delta = UnicodeWidthChar::width(c).unwrap() as i16;
-                        *width += delta;
-
-                        // Replace a full-width (全角) char at the edge of the screen with a space.
-                        if delta == 2 && *width == x_range.start {
-                            Some((*width, ' '))
-                        } else {
-                            Some((*width, c))
-                        }
-                    })
-                    .skip_while(|&(width, _)| width < x_range.start)
-                    .take_while(|&(width, _)| width < x_range.end)
-                    .map(|(_, c)| c)
-                    .chain(['\n'])
-                    .collect::<String>()
-            })
+            .range(&y_range)
+            .map(|l| l.slice_by_width(&x_range))
             .collect();
 
         // Render
