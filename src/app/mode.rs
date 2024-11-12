@@ -1,3 +1,4 @@
+mod dummy;
 mod command;
 mod make_rect;
 mod make_text;
@@ -8,6 +9,7 @@ use self::normal::NormalMode;
 use super::{canvas::CanvasHandler, cmd_line::CmdLine, shape::Shape, AppOp};
 use crate::util::Coord;
 use crossterm::event::Event;
+use dummy::DummyMode;
 use ratatui::widgets::Paragraph;
 
 pub trait Mode {
@@ -36,12 +38,10 @@ impl Default for ModeHandler {
 
 impl ModeHandler {
     pub fn process_event(&mut self, event: Event, canvas_handler: &CanvasHandler) -> AppOp {
-        unsafe {
-            let current_mode: Box<dyn Mode> = std::ptr::read(&self.0);
-            let (next_mode, app_op) = current_mode.next(event, canvas_handler);
-            std::ptr::write(&mut self.0, next_mode);
-            app_op
-        }
+        let current_mode = std::mem::replace(&mut self.0, Box::new(DummyMode::new()));
+        let (next_mode, app_op) = current_mode.next(event, canvas_handler);
+        self.0 = next_mode;
+        app_op
     }
 
     pub fn get(&self) -> &dyn Mode {
