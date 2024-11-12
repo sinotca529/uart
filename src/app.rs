@@ -40,19 +40,19 @@ impl App {
     }
 
     fn render(&mut self, f: &mut Frame<impl Backend>) {
-        let chunks1 = Layout::default()
+        let canvas_area = Constraint::Length(f.size().height - 1);
+        let cmd_line_area = Constraint::Length(1);
+
+        let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(f.size().height - 1),
-                    Constraint::Length(1),
-                ]
-                .as_ref(),
-            )
+            .constraints([canvas_area, cmd_line_area])
             .split(f.size());
 
+        let canvas_area = &layout[0];
+        let cmd_line_area = &layout[1];
+
         // Render canvas
-        let canvas_size = Size::new(chunks1[0].width, chunks1[0].height);
+        let canvas_size = Size::new(canvas_area.width, canvas_area.height);
         let additional_shapes = self
             .mode
             .get()
@@ -60,11 +60,11 @@ impl App {
 
         self.canvas_handler.set_rendering_size(canvas_size);
         self.canvas_handler.set_additional_shapes(additional_shapes);
-        f.render_widget(&mut self.canvas_handler, chunks1[0]);
+        f.render_widget(&mut self.canvas_handler, *canvas_area);
 
         // Render command line
         let cmd_line = self.mode.get().cmd_line();
-        f.render_widget(cmd_line, chunks1[1]);
+        f.render_widget(cmd_line, *cmd_line_area);
     }
 
     /// Main loop
