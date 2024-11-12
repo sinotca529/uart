@@ -179,10 +179,11 @@ impl Widget for &mut CanvasHandler {
 
         // Render cursor.
         let cursor = self.canvas.cursor();
-        buf.get_mut(
+        buf.cell_mut((
             (area.x as i16 + cursor.x() - self.rendering_offset.x) as u16,
             (area.y as i16 + cursor.y() - self.rendering_offset.y) as u16,
-        )
+        ))
+        .unwrap()
         .set_bg(Color::DarkGray);
     }
 }
