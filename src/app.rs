@@ -39,14 +39,14 @@ impl App {
         App::default()
     }
 
-    fn render(&mut self, f: &mut Frame<impl Backend>) {
-        let canvas_area = Constraint::Length(f.size().height - 1);
+    fn render(&mut self, f: &mut Frame) {
+        let canvas_area = Constraint::Length(f.area().height - 1);
         let cmd_line_area = Constraint::Length(1);
 
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([canvas_area, cmd_line_area])
-            .split(f.size());
+            .split(f.area());
 
         let canvas_area = &layout[0];
         let cmd_line_area = &layout[1];
