@@ -16,8 +16,8 @@ impl Rect {
     }
 }
 
-impl ToString for Rect {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Rect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let chips = self.style.chips();
         let (width, height) = (self.size.width as usize, self.size.height as usize);
         let mut s = vec![' '; (width + 1) * height];
@@ -41,7 +41,7 @@ impl ToString for Rect {
         s[(width + 1) * (height - 1)] = chips.lower_left_corner;
         s[(width + 1) * height - 2] = chips.lower_right_corner;
 
-        s.into_iter().collect()
+        write!(f, "{}", s.into_iter().collect::<String>())
     }
 }
 

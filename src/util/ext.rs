@@ -15,7 +15,7 @@ impl<T: AsRef<str>> StrExt for T {
     fn slice_by_width(&self, range: &Range<usize>) -> String {
         self.as_ref()
             .chars()
-            .scan(usize::max_value(), |width, c| {
+            .scan(usize::MAX, |width, c| {
                 // width : offset of the end of the char (0-origin).
                 //    abあc -> (0, a), (1, b), (3, あ), (4, c)
                 let delta = UnicodeWidthChar::width(c).unwrap();

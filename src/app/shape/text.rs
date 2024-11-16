@@ -13,9 +13,9 @@ impl Text {
     }
 }
 
-impl ToString for Text {
-    fn to_string(&self) -> String {
-        self.s.clone()
+impl std::fmt::Display for Text {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.s)
     }
 }
 
