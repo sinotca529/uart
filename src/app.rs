@@ -5,6 +5,7 @@ mod shape;
 
 use self::{canvas::CanvasHandler, mode::ModeHandler, shape::Shape};
 use crate::util::{Coord, Size};
+use canvas::ShapeIdSet;
 use crossterm::{
     event, execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -19,10 +20,8 @@ pub enum AppOp {
     MakeShape(Coord, Box<dyn Shape>),
     MoveCanvasCursor(crate::util::Direction),
     SetCanvasCursor(Coord),
-    ToggleShapeSelect,
-    DeleteSelectedShapes,
-    MoveSlectedShapes(crate::util::Direction),
-    UnselectAllShape,
+    DeleteShapes(ShapeIdSet),
+    MoveShapes(ShapeIdSet, crate::util::Direction),
     QuitApp,
     Nop,
 }
@@ -58,8 +57,12 @@ impl App {
             .get()
             .additinal_canvas_shapes(self.canvas_handler.cursor_coord());
 
+        let shapes_to_highlight = self.mode.get().shapes_to_highlight();
+
         self.canvas_handler.set_rendering_size(canvas_size);
         self.canvas_handler.set_additional_shapes(additional_shapes);
+        self.canvas_handler
+            .set_shapes_to_highlight(shapes_to_highlight);
         f.render_widget(&mut self.canvas_handler, *canvas_area);
 
         // Render command line
@@ -81,10 +84,8 @@ impl App {
                 MakeShape(c, s) => self.canvas_handler.add_shape(c, s),
                 MoveCanvasCursor(d) => self.canvas_handler.move_cursor(d),
                 SetCanvasCursor(c) => self.canvas_handler.set_cursor(c),
-                ToggleShapeSelect => self.canvas_handler.toggle_select(),
-                DeleteSelectedShapes => self.canvas_handler.delete_selected_shapes(),
-                MoveSlectedShapes(d) => self.canvas_handler.move_selected_shapes(d),
-                UnselectAllShape => self.canvas_handler.unselect_all_shape(),
+                DeleteShapes(ids) => self.canvas_handler.delte_shapes(&ids),
+                MoveShapes(ids, dir) => self.canvas_handler.move_shapes(&ids, dir),
                 Nop => {}
             }
         }

@@ -2,7 +2,10 @@ use super::{
     command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, select::SelectMode, Mode,
 };
 use crate::{
-    app::{canvas::CanvasHandler, AppOp},
+    app::{
+        canvas::{CanvasHandler, ShapeId},
+        AppOp,
+    },
     util::Direction,
 };
 use crossterm::event::{Event, KeyCode};
@@ -23,13 +26,13 @@ enum Op {
     /// Move Cursor
     MoveCursor(Direction),
     /// Toggle the selection state of the shape directly under the cursor.
-    ToggleShapeSelect,
+    EnterSelectShape(ShapeId),
     /// Do nothing.
     Nop,
 }
 
-impl From<Event> for Op {
-    fn from(e: Event) -> Self {
+impl From<(Event, &CanvasHandler)> for Op {
+    fn from((e, ch): (Event, &CanvasHandler)) -> Self {
         match e {
             Event::Key(k) => match k.code {
                 KeyCode::Char(c) => match c {
@@ -40,7 +43,10 @@ impl From<Event> for Op {
                     'l' => Op::MoveCursor(Direction::Right),
                     'r' => Op::EnterMakeRect,
                     't' => Op::EnterMakeText,
-                    ' ' => Op::ToggleShapeSelect,
+                    ' ' => match ch.shape_id_under_the_cursor() {
+                        Some(id) => Op::EnterSelectShape(id),
+                        None => Op::Nop,
+                    },
                     _ => Op::Nop,
                 },
                 _ => Op::Nop,
@@ -67,7 +73,7 @@ impl Default for NormalMode {
 impl Mode for NormalMode {
     fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
         let cursor = canvas_handler.cursor();
-        match e.into() {
+        match (e, canvas_handler).into() {
             Op::EnterCmd => {
                 let cmd = Box::new(CmdMode::new());
                 (cmd, AppOp::Nop)
@@ -76,13 +82,7 @@ impl Mode for NormalMode {
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::EnterMakeRect => (Box::new(MakeRectMode::new(cursor.coord())), AppOp::Nop),
             Op::EnterMakeText => (Box::new(MakeTextMode::new(cursor.coord())), AppOp::Nop),
-            Op::ToggleShapeSelect => {
-                if canvas_handler.cursor_hits_shape() {
-                    (Box::new(SelectMode::new()), AppOp::ToggleShapeSelect)
-                } else {
-                    (self, AppOp::Nop)
-                }
-            }
+            Op::EnterSelectShape(id) => (Box::new(SelectMode::new(id)), AppOp::Nop),
         }
     }
 

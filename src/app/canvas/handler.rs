@@ -1,10 +1,11 @@
-use super::{cursor::Cursor, Canvas, ShapeId};
+use super::{cursor::Cursor, Canvas, ShapeId, ShapeTag};
 use crate::{
     app::shape::Shape,
-    util::{Coord, Direction, Size},
+    util::{Coord, Direction, IdSet, Size},
 };
 use ratatui::{style::Color, widgets::Widget};
-use std::collections::HashSet;
+
+pub type ShapeIdSet = IdSet<ShapeTag>;
 
 /// Canvas handler
 ///
@@ -16,7 +17,7 @@ pub struct CanvasHandler {
     rendering_offset: Coord,
     rendering_size: Size,
     additional_shapes: Vec<(Coord, Box<dyn Shape>)>,
-    selected_shapes: HashSet<ShapeId>,
+    shapes_to_highlight: ShapeIdSet,
 }
 
 impl CanvasHandler {
@@ -49,6 +50,10 @@ impl CanvasHandler {
 
     pub fn set_additional_shapes(&mut self, shapes: Vec<(Coord, Box<dyn Shape>)>) {
         self.additional_shapes = shapes;
+    }
+
+    pub fn set_shapes_to_highlight(&mut self, shapes: ShapeIdSet) {
+        self.shapes_to_highlight = shapes;
     }
 
     /// Update rendering offset.
@@ -101,7 +106,7 @@ impl CanvasHandler {
 // Methods for select shapes.
 impl CanvasHandler {
     /// Id of the shape directly under the cursor.
-    fn shape_id_under_the_cursor(&self) -> Option<ShapeId> {
+    pub fn shape_id_under_the_cursor(&self) -> Option<ShapeId> {
         // Use the iterator in reverse order to select the most front figure.
         self.canvas
             .shapes
@@ -118,42 +123,12 @@ impl CanvasHandler {
         self.shape_id_under_the_cursor().is_some()
     }
 
-    pub fn will_toggle_last_selected_shape(&self) -> bool {
-        if self.selected_shapes.len() == 1 {
-            if let Some(id) = self.shape_id_under_the_cursor() {
-                self.selected_shapes.contains(&id)
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+    pub fn move_shapes(&mut self, ids: &ShapeIdSet, dir: Direction) {
+        ids.iter().for_each(|id| self.canvas.move_shape(id, dir));
     }
 
-    /// Change the selection state of the shape directly under the cursor.
-    pub fn toggle_select(&mut self) {
-        self.shape_id_under_the_cursor().iter().for_each(|id| {
-            if !self.selected_shapes.remove(id) {
-                self.selected_shapes.insert(*id);
-            }
-        })
-    }
-
-    pub fn move_selected_shapes(&mut self, dir: Direction) {
-        self.selected_shapes.iter().for_each(|id| {
-            self.canvas.move_shape(*id, dir);
-        });
-    }
-
-    pub fn delete_selected_shapes(&mut self) {
-        self.selected_shapes.iter().for_each(|id| {
-            self.canvas.delete_shape(*id);
-        });
-        self.selected_shapes.clear();
-    }
-
-    pub fn unselect_all_shape(&mut self) {
-        self.selected_shapes.clear();
+    pub fn delte_shapes(&mut self, ids: &ShapeIdSet) {
+        ids.iter().for_each(|i| self.canvas.delete_shape(i));
     }
 }
 
@@ -165,7 +140,7 @@ impl Widget for &mut CanvasHandler {
         // id is used as z-index (ref: BTreeMap::iter)
         for (id, (coord, shape)) in &self.canvas.shapes {
             let offset_from_area = coord.offset(self.rendering_offset);
-            let color = if self.selected_shapes.contains(id) {
+            let color = if self.shapes_to_highlight.contains(id) {
                 Color::Blue
             } else {
                 Color::White

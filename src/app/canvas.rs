@@ -10,8 +10,8 @@ pub use handler::*;
 use std::collections::BTreeMap;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd, Debug)]
-enum ShapeTag {}
-type ShapeId = Id<ShapeTag>;
+pub enum ShapeTag {}
+pub type ShapeId = Id<ShapeTag>;
 type ShapeIdGen = IdGenerator<ShapeTag>;
 
 #[derive(Default)]

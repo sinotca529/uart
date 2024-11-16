@@ -1,12 +1,17 @@
-mod dummy;
 mod command;
+mod dummy;
 mod make_rect;
 mod make_text;
 mod normal;
 mod select;
 
 use self::normal::NormalMode;
-use super::{canvas::CanvasHandler, cmd_line::CmdLine, shape::Shape, AppOp};
+use super::{
+    canvas::{CanvasHandler, ShapeIdSet},
+    cmd_line::CmdLine,
+    shape::Shape,
+    AppOp,
+};
 use crate::util::Coord;
 use crossterm::event::Event;
 use dummy::DummyMode;
@@ -18,6 +23,11 @@ pub trait Mode {
     /// Additional shapes to render on the canvas.
     fn additinal_canvas_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         vec![]
+    }
+
+    /// Shapes to highlight
+    fn shapes_to_highlight(&self) -> ShapeIdSet {
+        Default::default()
     }
 
     /// Message to show in command line.
