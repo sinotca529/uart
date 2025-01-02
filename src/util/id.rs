@@ -154,7 +154,7 @@ impl<'a, Tag> IdSetIterator<'a, Tag> {
     }
 }
 
-impl<'a, Tag> Iterator for IdSetIterator<'a, Tag> {
+impl<Tag> Iterator for IdSetIterator<'_, Tag> {
     type Item = Id<Tag>;
 
     fn next(&mut self) -> Option<Self::Item> {
