@@ -4,21 +4,21 @@ use crate::util::*;
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct Rect {
     size: Size,
-    style: Style,
+    line_style: Style,
 }
 
 impl Rect {
     pub fn new(size: Size) -> Self {
         Self {
             size,
-            style: Style::Single,
+            line_style: Style::Single,
         }
     }
 }
 
 impl std::fmt::Display for Rect {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let chips = self.style.chips();
+        let chips = self.line_style.chips();
         let (width, height) = (self.size.width as usize, self.size.height as usize);
         let mut s = vec![' '; (width + 1) * height];
 
@@ -48,6 +48,10 @@ impl std::fmt::Display for Rect {
 impl Shape for Rect {
     fn size(&self) -> Size {
         self.size
+    }
+
+    fn fill(&self) -> bool {
+        true
     }
 
     fn hit(&self, coord: Coord) -> bool {

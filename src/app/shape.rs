@@ -1,17 +1,18 @@
+pub mod path;
 pub mod rect;
 pub mod style;
 pub mod text;
 
 use crate::util::{Coord, IterExt, Size, StrExt};
-use ratatui::{
-    layout::Alignment,
-    style::{Color, Style},
-    widgets::{Paragraph, Widget},
-};
+use ratatui::style::{Color, Style};
 use std::ops::Range;
+use unicode_width::UnicodeWidthChar;
 
 pub trait Shape: ToString {
     fn size(&self) -> Size;
+
+    /// Fill the shape.
+    fn fill(&self) -> bool;
 
     fn render(
         &self,
@@ -68,17 +69,27 @@ pub trait Shape: ToString {
             .collect();
 
         // Render
+        let style = Style::default().fg(color);
         let shape_area = ratatui::layout::Rect::new(
             area.x + 0.max(offset.x) as u16,
             area.y + 0.max(offset.y) as u16,
             x_range.len() as u16,
             y_range.len() as u16,
         );
-        let t: ratatui::text::Text = cut.into();
 
-        let style = Style::default().fg(color);
-        let p = Paragraph::new(t).alignment(Alignment::Left).style(style);
-        p.render(shape_area, buf);
+        let mut x = shape_area.x;
+        let mut y = shape_area.y;
+        for c in cut.chars() {
+            if c == '\n' {
+                x = shape_area.x;
+                y += 1;
+                continue;
+            }
+            if !c.is_whitespace() || self.fill() {
+                buf.set_string(x, y, c.to_string(), style);
+            }
+            x += UnicodeWidthChar::width(c).unwrap() as u16;
+        }
     }
 
     /// Return true if the coord is on the shape.
