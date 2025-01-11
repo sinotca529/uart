@@ -31,3 +31,27 @@ impl Default for Coord {
         Self::new(0, 0)
     }
 }
+
+impl std::ops::Add<Coord> for Coord {
+    type Output = Coord;
+
+    fn add(self, rhs: Coord) -> Self::Output {
+        Coord::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl std::ops::Sub<Coord> for Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: Coord) -> Self::Output {
+        Coord::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl std::ops::Neg for Coord {
+    type Output = Coord;
+
+    fn neg(self) -> Self::Output {
+        Coord::new(-self.x, -self.y)
+    }
+}

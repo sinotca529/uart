@@ -12,7 +12,7 @@ impl<'a> CmdLine<'a> {
     }
 }
 
-impl<'a> Widget for CmdLine<'a> {
+impl Widget for CmdLine<'_> {
     fn render(self, area: ratatui::layout::Rect, buf: &mut ratatui::buffer::Buffer) {
         let cmd_line = Block::default()
             .borders(Borders::NONE)

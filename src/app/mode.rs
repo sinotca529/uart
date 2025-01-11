@@ -1,5 +1,6 @@
 mod command;
 mod dummy;
+mod make_path;
 mod make_rect;
 mod make_text;
 mod normal;
