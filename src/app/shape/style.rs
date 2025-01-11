@@ -84,4 +84,16 @@ impl Style {
             Ascii => Chips::new('-', '|', '+', '+', '+', '+', '^', 'v', '<', '>'),
         }
     }
+
+    /// Get the next style
+    pub fn next(&self) -> Self {
+        use Style::*;
+        match self {
+            Single => SingleBold,
+            SingleBold => Double,
+            Double => Dot,
+            Dot => Ascii,
+            Ascii => Single,
+        }
+    }
 }

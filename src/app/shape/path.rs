@@ -12,7 +12,12 @@ pub struct Path {
 }
 
 impl Path {
-    pub fn new(path: Vec<Direction>, has_start_arrow: bool, has_end_arrow: bool) -> Self {
+    pub fn new(
+        path: Vec<Direction>,
+        has_start_arrow: bool,
+        has_end_arrow: bool,
+        line_style: Style,
+    ) -> Self {
         let (mut max_x, mut min_x, mut max_y, mut min_y) = (0i16, 0i16, 0i16, 0i16);
         let (mut current_x, mut current_y) = (0, 0);
 
@@ -47,7 +52,7 @@ impl Path {
             path,
             size,
             start_to_upper_left,
-            line_style: Style::Single,
+            line_style,
             has_start_arrow,
             has_end_arrow,
         }

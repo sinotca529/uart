@@ -1,13 +1,13 @@
 use crossterm::event::{Event, KeyCode};
 use ratatui::{
     layout::Alignment,
-    style::{Color, Style},
+    style::Color,
     widgets::{Paragraph, Wrap},
 };
 
 use crate::{
     app::{
-        shape::{path::Path, Shape},
+        shape::{path::Path, Shape, style::Style},
         AppOp,
     },
     util::{Coord, Direction},
@@ -20,6 +20,7 @@ enum Op {
     /// Pop one step from path
     Back,
     MakePath,
+    SelectNextStyle,
     Nop,
 }
 
@@ -33,6 +34,7 @@ impl From<Event> for Op {
                     'j' => Op::MoveCursor(Direction::Down),
                     'k' => Op::MoveCursor(Direction::Up),
                     'l' => Op::MoveCursor(Direction::Right),
+                    's' => Op::SelectNextStyle,
                     _ => Op::Nop,
                 },
                 KeyCode::Backspace => Op::Back,
@@ -45,6 +47,7 @@ impl From<Event> for Op {
 
 pub struct MakePathMode {
     start_coord: Coord,
+    line_style: Style,
     path: Vec<Direction>,
 }
 
@@ -53,6 +56,7 @@ impl MakePathMode {
         Self {
             start_coord: canvas_cursor,
             path: vec![],
+            line_style: Style::Single,
         }
     }
 }
@@ -78,26 +82,30 @@ impl Mode for MakePathMode {
                 (self, AppOp::MoveCanvasCursor(dir.opposite()))
             }
             Op::MakePath => {
-                let line = Path::new(self.path.clone(), false, false);
+                let line = Path::new(self.path.clone(), false, false, self.line_style);
                 let start = self.start_coord + line.start_to_upper_left();
                 let op = AppOp::MakeShape(start, Box::new(line));
                 let mode = Box::new(NormalMode);
                 (mode, op)
             }
+            Op::SelectNextStyle => {
+                self.line_style = self.line_style.next();
+                (self, AppOp::Nop)
+            }
         }
     }
 
     fn additinal_canvas_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
-        let line = Path::new(self.path.clone(), false, false);
+        let line = Path::new(self.path.clone(), false, false, self.line_style);
         let start = self.start_coord + line.start_to_upper_left();
         vec![(start, Box::new(line))]
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("LINE [Enter]Complete");
+        let t = ratatui::text::Text::raw("LINE [Enter]Complete, [s]Change Line Style");
         Paragraph::new(t)
             .style(
-                Style::default()
+                ratatui::style::Style::default()
                     .fg(Color::Rgb(255, 255, 255))
                     .bg(Color::Rgb(50, 50, 50)),
             )
