@@ -11,6 +11,14 @@ impl Rect {
     pub fn new(size: Size, line_style: Style) -> Self {
         Self { size, line_style }
     }
+
+    pub fn set_size(&mut self, size: Size) {
+        self.size = size;
+    }
+
+    pub fn set_next_line_style(&mut self) {
+        self.line_style = self.line_style.next();
+    }
 }
 
 impl std::fmt::Display for Rect {
