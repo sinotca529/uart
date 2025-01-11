@@ -1,4 +1,7 @@
-use super::{style::Style, Shape};
+use super::{
+    style::{ChipKind::*, Style},
+    Shape,
+};
 use crate::util::*;
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
@@ -41,11 +44,10 @@ impl Path {
     }
 
     pub fn pop_path(&mut self) -> Option<Direction> {
-        self.path.pop().map(|dir| {
+        self.path.pop().inspect(|_| {
             let (size, start_to_upper_left) = Self::calc_size_and_start_to_upper_left(&self.path);
             self.size = size;
             self.start_to_upper_left = start_to_upper_left;
-            dir
         })
     }
 
@@ -114,12 +116,12 @@ impl std::fmt::Display for Path {
 
         for &d in path {
             let chip = match (before, d) {
-                (Up, Up) | (Up, Down) | (Down, Up) | (Down, Down) => chips.vertical,
-                (Left, Left) | (Left, Right) | (Right, Left) | (Right, Right) => chips.horizontal,
-                (Up, Left) | (Right, Down) => chips.upper_right_corner,
-                (Up, Right) | (Left, Down) => chips.upper_left_corner,
-                (Down, Left) | (Right, Up) => chips.lower_right_corner,
-                (Down, Right) | (Left, Up) => chips.lower_left_corner,
+                (Up, Up) | (Up, Down) | (Down, Up) | (Down, Down) => chips[Vertical],
+                (Left, Left) | (Left, Right) | (Right, Left) | (Right, Right) => chips[Horizontal],
+                (Up, Left) | (Right, Down) => chips[UpperRightCorner],
+                (Up, Right) | (Left, Down) => chips[UpperLeftCorner],
+                (Down, Left) | (Right, Up) => chips[LowerRightCorner],
+                (Down, Right) | (Left, Up) => chips[LowerLeftCorner],
             };
 
             line[coord.y as usize][coord.x as usize] = chip;
@@ -131,10 +133,10 @@ impl std::fmt::Display for Path {
         // Add arrow
         if self.has_start_arrow {
             let arrow = match self.path.first().unwrap() {
-                Up => chips.down_arrow,
-                Down => chips.up_arrow,
-                Left => chips.right_arrow,
-                Right => chips.left_arrow,
+                Up => chips[DownArrow],
+                Down => chips[UpArrow],
+                Left => chips[RightArrow],
+                Right => chips[LeftArrow],
             };
             let start_coord = -self.start_to_upper_left;
             line[start_coord.y as usize][start_coord.x as usize] = arrow;
@@ -142,10 +144,10 @@ impl std::fmt::Display for Path {
 
         if self.has_end_arrow {
             let (arrow, end_coord) = match self.path.last().unwrap() {
-                Up => (chips.up_arrow, coord.adjacency(Down)),
-                Down => (chips.down_arrow, coord.adjacency(Up)),
-                Left => (chips.left_arrow, coord.adjacency(Right)),
-                Right => (chips.right_arrow, coord.adjacency(Left)),
+                Up => (chips[UpArrow], coord.adjacency(Down)),
+                Down => (chips[DownArrow], coord.adjacency(Up)),
+                Left => (chips[LeftArrow], coord.adjacency(Right)),
+                Right => (chips[RightArrow], coord.adjacency(Left)),
             };
             line[end_coord.y as usize][end_coord.x as usize] = arrow;
         }
