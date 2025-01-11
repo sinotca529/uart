@@ -1,4 +1,7 @@
-use super::{style::Style, Shape};
+use super::{
+    style::{ChipKind::*, Style},
+    Shape,
+};
 use crate::util::*;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
@@ -29,22 +32,22 @@ impl std::fmt::Display for Rect {
 
         // new line & vertical line
         for h in 0..height {
-            s[(width + 1) * h] = chips.vertical;
-            s[(width + 1) * h + (width - 1)] = chips.vertical;
+            s[(width + 1) * h] = chips[Vertical];
+            s[(width + 1) * h + (width - 1)] = chips[Vertical];
             s[(width + 1) * h + width] = '\n';
         }
 
         // horizontal line
         for w in 1..(width - 1) {
-            s[w] = chips.horizontal;
-            s[w + (width + 1) * (height - 1)] = chips.horizontal;
+            s[w] = chips[Horizontal];
+            s[w + (width + 1) * (height - 1)] = chips[Horizontal];
         }
 
         // corner
-        s[0] = chips.upper_left_corner;
-        s[width - 1] = chips.upper_right_corner;
-        s[(width + 1) * (height - 1)] = chips.lower_left_corner;
-        s[(width + 1) * height - 2] = chips.lower_right_corner;
+        s[0] = chips[UpperLeftCorner];
+        s[width - 1] = chips[UpperRightCorner];
+        s[(width + 1) * (height - 1)] = chips[LowerLeftCorner];
+        s[(width + 1) * height - 2] = chips[LowerRightCorner];
 
         write!(f, "{}", s.into_iter().collect::<String>())
     }
