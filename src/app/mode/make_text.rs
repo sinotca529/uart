@@ -7,13 +7,13 @@ use crate::{
     },
     util::Coord,
 };
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use ratatui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
 };
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthChar;
 
 enum Op {
     MakeText,
@@ -27,10 +27,10 @@ impl From<Event> for Op {
     fn from(e: Event) -> Self {
         match e {
             Event::Key(k) => match k.code {
-                KeyCode::Enter => Op::Enter,
+                KeyCode::Enter if k.modifiers == KeyModifiers::NONE => Op::Enter,
+                KeyCode::Enter if k.modifiers == KeyModifiers::SHIFT => Op::MakeText,
                 KeyCode::Char(c) => Op::AddChar(c),
                 KeyCode::Backspace => Op::Backspace,
-                KeyCode::Esc => Op::MakeText,
                 _ => Op::Nop,
             },
             _ => Op::Nop,
@@ -102,7 +102,7 @@ impl Mode for MakeTextMode {
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("TEXT [Esc]Complete");
+        let t = ratatui::text::Text::raw("TEXT [S-CR]Complete");
         Paragraph::new(t)
             .style(
                 Style::default()
