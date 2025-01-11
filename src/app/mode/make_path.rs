@@ -82,10 +82,14 @@ impl Mode for MakePathMode {
                 (self, AppOp::MoveCanvasCursor(dir.opposite()))
             }
             Op::MakePath => {
+                let mode = Box::new(NormalMode);
+                if self.path.is_empty() {
+                    return (mode, AppOp::Nop)
+                }
+
                 let line = Path::new(self.path.clone(), false, false, self.line_style);
                 let start = self.start_coord + line.start_to_upper_left();
                 let op = AppOp::MakeShape(start, Box::new(line));
-                let mode = Box::new(NormalMode);
                 (mode, op)
             }
             Op::SelectNextStyle => {
