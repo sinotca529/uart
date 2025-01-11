@@ -64,7 +64,7 @@ impl MakeRectMode {
 
     fn update_rect_size(&mut self, current_cursor: Coord) {
         let diff = current_cursor - self.start_coord;
-        let (w, h) = (diff.x.abs() as u16 + 1, diff.y.abs() as u16 + 1);
+        let (w, h) = (diff.x.unsigned_abs() + 1, diff.y.unsigned_abs() + 1);
         self.rect.set_size(Size::new(w, h));
     }
 }
@@ -87,7 +87,7 @@ impl Mode for MakeRectMode {
             }
             Op::MakeRect => {
                 let upper_left = self.upper_left_corner(canvas_handler.cursor_coord());
-                let op = AppOp::MakeShape(upper_left, Box::new(self.rect.clone()));
+                let op = AppOp::MakeShape(upper_left, Box::new(self.rect));
                 (Box::new(NormalMode), op)
             }
         }
@@ -95,7 +95,7 @@ impl Mode for MakeRectMode {
 
     fn additinal_canvas_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
         let upper_left = self.upper_left_corner(canvas_cursor);
-        vec![(upper_left, Box::new(self.rect.clone()))]
+        vec![(upper_left, Box::new(self.rect))]
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
