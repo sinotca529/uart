@@ -21,7 +21,7 @@ pub enum AppOp {
     MoveCanvasCursor(crate::util::Direction),
     SetCanvasCursor(Coord),
     DeleteShapes(ShapeIdSet),
-    MoveShapes(ShapeIdSet, crate::util::Direction),
+    MoveShapesAndCanvasCursor(ShapeIdSet, crate::util::Direction),
     QuitApp,
     Nop,
 }
@@ -85,7 +85,10 @@ impl App {
                 MoveCanvasCursor(d) => self.canvas_handler.move_cursor(d),
                 SetCanvasCursor(c) => self.canvas_handler.set_cursor(c),
                 DeleteShapes(ids) => self.canvas_handler.delte_shapes(&ids),
-                MoveShapes(ids, dir) => self.canvas_handler.move_shapes(&ids, dir),
+                MoveShapesAndCanvasCursor(ids, dir) => {
+                    self.canvas_handler.move_cursor(dir);
+                    self.canvas_handler.move_shapes(&ids, dir);
+                }
                 Nop => {}
             }
         }
