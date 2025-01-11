@@ -47,16 +47,14 @@ impl From<Event> for Op {
 
 pub struct MakePathMode {
     start_coord: Coord,
-    line_style: Style,
-    path: Vec<Direction>,
+    path: Path,
 }
 
 impl MakePathMode {
     pub fn new(canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
-            path: vec![],
-            line_style: Style::Single,
+            path: Path::new(vec![], false, false, Style::Single),
         }
     }
 }
@@ -70,39 +68,33 @@ impl Mode for MakePathMode {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MoveCursor(d) => {
-                self.path.push(d);
+                self.path.push_path(d);
                 (self, AppOp::MoveCanvasCursor(d))
             }
-            Op::Back => {
-                if self.path.is_empty() {
-                    return (self, AppOp::Nop);
-                }
-
-                let dir = self.path.pop().unwrap();
-                (self, AppOp::MoveCanvasCursor(dir.opposite()))
-            }
+            Op::Back => match self.path.pop_path() {
+                Some(dir) => (self, AppOp::MoveCanvasCursor(dir.opposite())),
+                None => (self, AppOp::Nop),
+            },
             Op::MakePath => {
+                let op = if self.path.is_empty() {
+                    AppOp::Nop
+                } else {
+                    let upper_left = self.start_coord + self.path.start_to_upper_left();
+                    AppOp::MakeShape(upper_left, Box::new(self.path.clone()))
+                };
                 let mode = Box::new(NormalMode);
-                if self.path.is_empty() {
-                    return (mode, AppOp::Nop);
-                }
-
-                let line = Path::new(self.path.clone(), false, false, self.line_style);
-                let start = self.start_coord + line.start_to_upper_left();
-                let op = AppOp::MakeShape(start, Box::new(line));
                 (mode, op)
             }
             Op::SelectNextStyle => {
-                self.line_style = self.line_style.next();
+                self.path.set_next_line_style();
                 (self, AppOp::Nop)
             }
         }
     }
 
     fn additinal_canvas_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
-        let line = Path::new(self.path.clone(), false, false, self.line_style);
-        let start = self.start_coord + line.start_to_upper_left();
-        vec![(start, Box::new(line))]
+        let start = self.start_coord + self.path.start_to_upper_left();
+        vec![(start, Box::new(self.path.clone()))]
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
