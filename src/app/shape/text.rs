@@ -32,6 +32,10 @@ impl Shape for Text {
         Size::new(w, h)
     }
 
+    fn fill(&self) -> bool {
+        true
+    }
+
     fn hit(&self, coord: Coord) -> bool {
         if coord.x < 0 || coord.y < 0 {
             return false;

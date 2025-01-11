@@ -1,5 +1,6 @@
 use super::{
-    command::CmdMode, make_rect::MakeRectMode, make_text::MakeTextMode, select::SelectMode, Mode,
+    command::CmdMode, make_path::MakePathMode, make_rect::MakeRectMode, make_text::MakeTextMode,
+    select::SelectMode, Mode,
 };
 use crate::{
     app::{
@@ -21,6 +22,8 @@ enum Op {
     EnterCmd,
     /// Change to make rect mode.
     EnterMakeRect,
+    /// Change to make line mode.
+    EnterMakePath,
     /// Change to make text mode.
     EnterMakeText,
     /// Move Cursor
@@ -42,6 +45,7 @@ impl From<(Event, &CanvasHandler)> for Op {
                     'k' => Op::MoveCursor(Direction::Up),
                     'l' => Op::MoveCursor(Direction::Right),
                     'r' => Op::EnterMakeRect,
+                    'p' => Op::EnterMakePath,
                     't' => Op::EnterMakeText,
                     ' ' => match ch.shape_id_under_the_cursor() {
                         Some(id) => Op::EnterSelectShape(id),
@@ -81,13 +85,14 @@ impl Mode for NormalMode {
             Op::Nop => (self, AppOp::Nop),
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::EnterMakeRect => (Box::new(MakeRectMode::new(cursor.coord())), AppOp::Nop),
+            Op::EnterMakePath => (Box::new(MakePathMode::new(cursor.coord())), AppOp::Nop),
             Op::EnterMakeText => (Box::new(MakeTextMode::new(cursor.coord())), AppOp::Nop),
             Op::EnterSelectShape(id) => (Box::new(SelectMode::new(id)), AppOp::Nop),
         }
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("NORM [:]cmd [r]rect [t]text");
+        let t = ratatui::text::Text::raw("NORM [:]cmd [r]rect [t]text [p]path [SP]select");
         Paragraph::new(t)
             .style(
                 Style::default()
