@@ -40,14 +40,14 @@ impl From<Event> for Op {
 
 pub struct MakeTextMode {
     start_coord: Coord,
-    text: String,
+    text: Text,
 }
 
 impl MakeTextMode {
     pub fn new(canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
-            text: String::new(),
+            text: Text::new(String::new()),
         }
     }
 }
@@ -62,10 +62,12 @@ impl Mode for MakeTextMode {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MakeText => {
-                let mode = Box::new(NormalMode);
-                let text = Box::new(Text::new(self.text.clone()));
-                let op = AppOp::MakeShape(self.start_coord, text);
-                (mode, op)
+                let op = if self.text.is_empty() {
+                    AppOp::Nop
+                } else {
+                    AppOp::MakeShape(self.start_coord, Box::new(self.text))
+                };
+                (Box::new(NormalMode), op)
             }
             Op::AddChar(c) => {
                 self.text.push(c);
@@ -82,7 +84,7 @@ impl Mode for MakeTextMode {
                 let c = self.text.pop();
                 match c {
                     Some('\n') => {
-                        let last_line = self.text.lines().last().unwrap_or("");
+                        let last_line = self.text.last_line().unwrap_or("");
                         let last_line_width = UnicodeWidthStr::width(last_line) as i16;
                         cursor_coord.y -= 1;
                         cursor_coord.x += last_line_width;
@@ -98,8 +100,7 @@ impl Mode for MakeTextMode {
     }
 
     fn additinal_canvas_shapes(&self, _: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
-        let text = Text::new(self.text.clone());
-        vec![(self.start_coord, Box::new(text))]
+        vec![(self.start_coord, Box::new(self.text.clone()))]
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {

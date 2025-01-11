@@ -11,6 +11,22 @@ impl Text {
     pub fn new(s: String) -> Self {
         Self { s }
     }
+
+    pub fn push(&mut self, c: char) {
+        self.s.push(c);
+    }
+
+    pub fn pop(&mut self) -> Option<char> {
+        self.s.pop()
+    }
+
+    pub fn last_line(&self) -> Option<&str> {
+        self.s.lines().last()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.s.is_empty()
+    }
 }
 
 impl std::fmt::Display for Text {
