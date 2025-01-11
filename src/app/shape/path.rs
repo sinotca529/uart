@@ -55,6 +55,17 @@ impl Path {
         self.line_style = self.line_style.next();
     }
 
+    pub fn set_next_arrow_state(&mut self) {
+        let (s, e) = match (self.has_start_arrow, self.has_end_arrow) {
+            (true, true) => (false, false),
+            (true, false) => (true, true),
+            (false, true) => (true, false),
+            (false, false) => (false, true),
+        };
+        self.has_start_arrow = s;
+        self.has_end_arrow = e;
+    }
+
     pub fn start_to_upper_left(&self) -> Coord {
         self.start_to_upper_left
     }
