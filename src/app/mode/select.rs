@@ -81,7 +81,7 @@ impl Mode for SelectMode {
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
             Op::MoveShapes(d) => {
                 let shapes = self.selected_shapes.clone();
-                (self, AppOp::MoveShapes(shapes, d))
+                (self, AppOp::MoveShapesAndCanvasCursor(shapes, d))
             }
             Op::DeleteShapes => (
                 Box::new(NormalMode::new()),
