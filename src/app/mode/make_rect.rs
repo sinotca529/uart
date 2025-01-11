@@ -70,7 +70,11 @@ impl MakeRectMode {
 }
 
 impl Mode for MakeRectMode {
-    fn next(mut self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
+    fn next(
+        mut self: Box<Self>,
+        e: Event,
+        canvas_handler: &CanvasHandler,
+    ) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
             Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),

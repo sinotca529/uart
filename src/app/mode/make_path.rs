@@ -7,7 +7,7 @@ use ratatui::{
 
 use crate::{
     app::{
-        shape::{path::Path, Shape, style::Style},
+        shape::{path::Path, style::Style, Shape},
         AppOp,
     },
     util::{Coord, Direction},
@@ -75,7 +75,7 @@ impl Mode for MakePathMode {
             }
             Op::Back => {
                 if self.path.is_empty() {
-                    return (self, AppOp::Nop)
+                    return (self, AppOp::Nop);
                 }
 
                 let dir = self.path.pop().unwrap();
@@ -84,7 +84,7 @@ impl Mode for MakePathMode {
             Op::MakePath => {
                 let mode = Box::new(NormalMode);
                 if self.path.is_empty() {
-                    return (mode, AppOp::Nop)
+                    return (mode, AppOp::Nop);
                 }
 
                 let line = Path::new(self.path.clone(), false, false, self.line_style);
