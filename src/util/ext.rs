@@ -18,7 +18,7 @@ impl<T: AsRef<str>> StrExt for T {
             .scan(usize::MAX, |width, c| {
                 // width : offset of the end of the char (0-origin).
                 //    abあc -> (0, a), (1, b), (3, あ), (4, c)
-                let delta = UnicodeWidthChar::width(c).unwrap();
+                let delta = c.width().unwrap();
                 *width = width.wrapping_add(delta);
 
                 // Replace a full-width (全角) char at the edge of the screen with a space.

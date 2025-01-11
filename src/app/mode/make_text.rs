@@ -71,7 +71,7 @@ impl Mode for MakeTextMode {
             }
             Op::AddChar(c) => {
                 self.text.push(c);
-                cursor_coord.x += UnicodeWidthChar::width(c).unwrap() as i16;
+                cursor_coord.x += c.width().unwrap() as i16;
                 (self, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Enter => {
@@ -85,12 +85,12 @@ impl Mode for MakeTextMode {
                 match c {
                     Some('\n') => {
                         let last_line = self.text.last_line().unwrap_or("");
-                        let last_line_width = UnicodeWidthStr::width(last_line) as i16;
+                        let last_line_width = last_line.width() as i16;
                         cursor_coord.y -= 1;
                         cursor_coord.x += last_line_width;
                     }
                     Some(c) => {
-                        cursor_coord.x -= UnicodeWidthChar::width(c).unwrap() as i16;
+                        cursor_coord.x -= c.width().unwrap() as i16;
                     }
                     _ => {}
                 }
