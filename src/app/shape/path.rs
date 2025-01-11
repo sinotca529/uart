@@ -18,6 +18,46 @@ impl Path {
         has_end_arrow: bool,
         line_style: Style,
     ) -> Self {
+        let (size, start_to_upper_left) = Self::calc_size_and_start_to_upper_left(&path);
+        Self {
+            path,
+            size,
+            start_to_upper_left,
+            line_style,
+            has_start_arrow,
+            has_end_arrow,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.path.is_empty()
+    }
+
+    pub fn push_path(&mut self, dir: Direction) {
+        self.path.push(dir);
+        let (size, start_to_upper_left) = Self::calc_size_and_start_to_upper_left(&self.path);
+        self.size = size;
+        self.start_to_upper_left = start_to_upper_left;
+    }
+
+    pub fn pop_path(&mut self) -> Option<Direction> {
+        self.path.pop().map(|dir| {
+            let (size, start_to_upper_left) = Self::calc_size_and_start_to_upper_left(&self.path);
+            self.size = size;
+            self.start_to_upper_left = start_to_upper_left;
+            dir
+        })
+    }
+
+    pub fn set_next_line_style(&mut self) {
+        self.line_style = self.line_style.next();
+    }
+
+    pub fn start_to_upper_left(&self) -> Coord {
+        self.start_to_upper_left
+    }
+
+    fn calc_size_and_start_to_upper_left(path: &[Direction]) -> (Size, Coord) {
         let (mut max_x, mut min_x, mut max_y, mut min_y) = (0i16, 0i16, 0i16, 0i16);
         let (mut current_x, mut current_y) = (0, 0);
 
@@ -48,18 +88,7 @@ impl Path {
         let offset_y = if min_y < 0 { min_y } else { 0 };
         let start_to_upper_left = Coord::new(offset_x, offset_y);
 
-        Self {
-            path,
-            size,
-            start_to_upper_left,
-            line_style,
-            has_start_arrow,
-            has_end_arrow,
-        }
-    }
-
-    pub fn start_to_upper_left(&self) -> Coord {
-        self.start_to_upper_left
+        (size, start_to_upper_left)
     }
 }
 
