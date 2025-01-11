@@ -9,10 +9,7 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(size: Size, line_style: Style) -> Self {
-        Self {
-            size,
-            line_style,
-        }
+        Self { size, line_style }
     }
 }
 
