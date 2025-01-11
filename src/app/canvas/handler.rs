@@ -149,7 +149,7 @@ impl Widget for &mut CanvasHandler {
         }
         for (coord, shape) in self.additional_shapes.iter() {
             let offset_from_area = coord.offset(self.rendering_offset);
-            shape.render(offset_from_area, area, buf, Color::White);
+            shape.render(offset_from_area, area, buf, Color::Green);
         }
 
         // Render cursor.
@@ -159,6 +159,6 @@ impl Widget for &mut CanvasHandler {
             (area.y as i16 + cursor.y() - self.rendering_offset.y) as u16,
         ))
         .unwrap()
-        .set_bg(Color::DarkGray);
+        .set_bg(Color::Gray);
     }
 }
