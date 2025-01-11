@@ -44,28 +44,28 @@ impl From<Event> for Op {
 
 pub struct MakeRectMode {
     start_coord: Coord,
-    style: Style,
+    rect: Rect,
 }
 
 impl MakeRectMode {
     pub fn new(canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
-            style: Style::Single,
+            rect: Rect::new(Size::new(1, 1), Style::Single),
         }
     }
 
-    /// Make rect
-    fn make_rect(a: Coord, b: Coord, style: Style) -> (Coord, Rect) {
-        let w = a.x.abs_diff(b.x) + 1;
-        let h = a.y.abs_diff(b.y) + 1;
-        let rect = Rect::new(Size::new(w, h), style);
+    fn upper_left_corner(&self, current_cursor: Coord) -> Coord {
+        Coord::new(
+            self.start_coord.x.min(current_cursor.x),
+            self.start_coord.y.min(current_cursor.y),
+        )
+    }
 
-        let x = a.x.min(b.x);
-        let y = a.y.min(b.y);
-        let start = Coord::new(x, y);
-
-        (start, rect)
+    fn update_rect_size(&mut self, current_cursor: Coord) {
+        let diff = current_cursor - self.start_coord;
+        let (w, h) = (diff.x.abs() as u16 + 1, diff.y.abs() as u16 + 1);
+        self.rect.set_size(Size::new(w, h));
     }
 }
 
@@ -77,24 +77,25 @@ impl Mode for MakeRectMode {
     ) -> (Box<dyn Mode>, AppOp) {
         match e.into() {
             Op::Nop => (self, AppOp::Nop),
-            Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
+            Op::MoveCursor(d) => {
+                self.update_rect_size(canvas_handler.cursor_coord().adjacency(d));
+                (self, AppOp::MoveCanvasCursor(d))
+            }
             Op::NextStyle => {
-                self.style = self.style.next();
+                self.rect.set_next_line_style();
                 (self, AppOp::Nop)
             }
             Op::MakeRect => {
-                let (start, rect) =
-                    Self::make_rect(self.start_coord, canvas_handler.cursor_coord(), self.style);
-                let op = AppOp::MakeShape(start, Box::new(rect));
-                let mode = Box::new(NormalMode);
-                (mode, op)
+                let upper_left = self.upper_left_corner(canvas_handler.cursor_coord());
+                let op = AppOp::MakeShape(upper_left, Box::new(self.rect.clone()));
+                (Box::new(NormalMode), op)
             }
         }
     }
 
     fn additinal_canvas_shapes(&self, canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
-        let (start, rect) = Self::make_rect(self.start_coord, canvas_cursor, self.style);
-        vec![(start, Box::new(rect))]
+        let upper_left = self.upper_left_corner(canvas_cursor);
+        vec![(upper_left, Box::new(self.rect.clone()))]
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
