@@ -21,6 +21,7 @@ enum Op {
     Back,
     MakePath,
     SelectNextStyle,
+    SelectNextArrowState,
     Nop,
 }
 
@@ -35,6 +36,7 @@ impl From<Event> for Op {
                     'k' => Op::MoveCursor(Direction::Up),
                     'l' => Op::MoveCursor(Direction::Right),
                     's' => Op::SelectNextStyle,
+                    'a' => Op::SelectNextArrowState,
                     _ => Op::Nop,
                 },
                 KeyCode::Backspace => Op::Back,
@@ -87,6 +89,10 @@ impl Mode for MakePathMode {
             }
             Op::SelectNextStyle => {
                 self.path.set_next_line_style();
+                (self, AppOp::Nop)
+            }
+            Op::SelectNextArrowState => {
+                self.path.set_next_arrow_state();
                 (self, AppOp::Nop)
             }
         }
