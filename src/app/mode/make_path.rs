@@ -17,6 +17,8 @@ use super::{normal::NormalMode, Mode};
 
 enum Op {
     MoveCursor(Direction),
+    /// Pop one step from path
+    Back,
     MakePath,
     Nop,
 }
@@ -33,6 +35,7 @@ impl From<Event> for Op {
                     'l' => Op::MoveCursor(Direction::Right),
                     _ => Op::Nop,
                 },
+                KeyCode::Backspace => Op::Back,
                 _ => Op::Nop,
             },
             _ => Op::Nop,
@@ -65,6 +68,14 @@ impl Mode for MakePathMode {
             Op::MoveCursor(d) => {
                 self.path.push(d);
                 (self, AppOp::MoveCanvasCursor(d))
+            }
+            Op::Back => {
+                if self.path.is_empty() {
+                    return (self, AppOp::Nop)
+                }
+
+                let dir = self.path.pop().unwrap();
+                (self, AppOp::MoveCanvasCursor(dir.opposite()))
             }
             Op::MakePath => {
                 let line = Path::new(self.path.clone(), false, false);
