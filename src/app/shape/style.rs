@@ -70,6 +70,7 @@ pub enum Style {
     SingleBold,
     Double,
     Dash,
+    Dot,
     Ascii,
 }
 
@@ -81,6 +82,7 @@ impl Style {
             SingleBold => Chips::new('━', '┃', '┏', '┓', '┗', '┛', '▲', '▼', '◀', '▶'),
             Double => Chips::new('═', '║', '╔', '╗', '╚', '╝', '▲', '▼', '◀', '▶'),
             Dash => Chips::new('╌', '╎', '┌', '┐', '└', '┘', '▲', '▼', '◀', '▶'),
+            Dot => Chips::new('.', '.', '.', '.', '.', '.', '^', 'v', '<', '>'),
             Ascii => Chips::new('-', '|', '+', '+', '+', '+', '^', 'v', '<', '>'),
         }
     }
@@ -92,7 +94,8 @@ impl Style {
             Single => SingleBold,
             SingleBold => Double,
             Double => Dash,
-            Dash => Ascii,
+            Dash => Dot,
+            Dot => Ascii,
             Ascii => Single,
         }
     }
