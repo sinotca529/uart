@@ -84,10 +84,8 @@ impl Mode for MakeTextMode {
                 let c = self.text.pop();
                 match c {
                     Some('\n') => {
-                        let last_line = self.text.last_line().unwrap_or("");
-                        let last_line_width = last_line.width() as i16;
                         cursor_coord.y -= 1;
-                        cursor_coord.x += last_line_width;
+                        cursor_coord.x += self.text.last_line_width().unwrap_or(0) as i16;
                     }
                     Some(c) => {
                         cursor_coord.x -= c.width().unwrap() as i16;

@@ -20,8 +20,15 @@ impl Text {
         self.s.pop()
     }
 
-    pub fn last_line(&self) -> Option<&str> {
-        self.s.lines().last()
+    /// Returns the last line width.
+    /// If the text ends with '\n', it returns 0.
+    /// While String::lines() ignores the last '\n', this method does not.
+    pub fn last_line_width(&self) -> Option<usize> {
+        if self.s.ends_with('\n') {
+            Some(0)
+        } else {
+            self.s.lines().last().map(|l| l.width())
+        }
     }
 
     pub fn is_empty(&self) -> bool {
