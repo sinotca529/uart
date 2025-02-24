@@ -1,57 +1,50 @@
+use super::{normal::NormalMode, Mode};
 use crate::{
     app::{
         canvas::CanvasHandler,
+        keybind_manager::KeyBindManager,
         shape::{rect::Rect, style::Style, Shape},
         AppOp,
     },
     util::{Coord, Direction, Size},
 };
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use ratatui::{
     layout::Alignment,
     style::Color,
     widgets::{Paragraph, Wrap},
 };
+use serde::Deserialize;
+use std::collections::HashMap;
 
-use super::{normal::NormalMode, Mode};
-
-enum Op {
+#[derive(Clone, Deserialize, Debug)]
+pub enum Op {
     MoveCursor(Direction),
-    MakeRect,
+    MakeShape,
     NextStyle,
-    Nop,
-}
-
-impl From<Event> for Op {
-    fn from(e: Event) -> Self {
-        match e {
-            Event::Key(k) => match k.code {
-                KeyCode::Enter => Op::MakeRect,
-                KeyCode::Char(c) => match c {
-                    'h' => Op::MoveCursor(Direction::Left),
-                    'j' => Op::MoveCursor(Direction::Down),
-                    'k' => Op::MoveCursor(Direction::Up),
-                    'l' => Op::MoveCursor(Direction::Right),
-                    's' => Op::NextStyle,
-                    _ => Op::Nop,
-                },
-                _ => Op::Nop,
-            },
-            _ => Op::Nop,
-        }
-    }
 }
 
 pub struct MakeRectMode {
     start_coord: Coord,
     rect: Rect,
+    kb_mbr: KeyBindManager<Op>,
 }
 
 impl MakeRectMode {
     pub fn new(canvas_cursor: Coord) -> Self {
+        let mut bindings = HashMap::new();
+        bindings.insert("h", Op::MoveCursor(Direction::Left));
+        bindings.insert("j", Op::MoveCursor(Direction::Down));
+        bindings.insert("k", Op::MoveCursor(Direction::Up));
+        bindings.insert("l", Op::MoveCursor(Direction::Right));
+        bindings.insert("s", Op::NextStyle);
+        bindings.insert("<cr>", Op::MakeShape);
+        let kb_mbr = KeyBindManager::new(bindings).unwrap();
+
         Self {
             start_coord: canvas_cursor,
             rect: Rect::new(Size::new(1, 1), Style::Single),
+            kb_mbr,
         }
     }
 
@@ -75,8 +68,11 @@ impl Mode for MakeRectMode {
         e: Event,
         canvas_handler: &CanvasHandler,
     ) -> (Box<dyn Mode>, AppOp) {
-        match e.into() {
-            Op::Nop => (self, AppOp::Nop),
+        let Some(op) = self.kb_mbr.process_event(e) else {
+            return (self, AppOp::Nop);
+        };
+
+        match op {
             Op::MoveCursor(d) => {
                 self.update_rect_size(canvas_handler.cursor_coord().adjacency(d));
                 (self, AppOp::MoveCanvasCursor(d))
@@ -85,7 +81,7 @@ impl Mode for MakeRectMode {
                 self.rect.set_next_line_style();
                 (self, AppOp::Nop)
             }
-            Op::MakeRect => {
+            Op::MakeShape => {
                 let upper_left = self.upper_left_corner(canvas_handler.cursor_coord());
                 let op = AppOp::MakeShape(upper_left, Box::new(self.rect));
                 (Box::new(NormalMode), op)
@@ -99,7 +95,7 @@ impl Mode for MakeRectMode {
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("RECT [Enter]Complete, [s]Change Line Style");
+        let t = ratatui::text::Text::raw("RECT [↵]Complete, [s]Change Line Style");
         Paragraph::new(t)
             .style(
                 ratatui::style::Style::default()

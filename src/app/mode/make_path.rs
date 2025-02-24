@@ -1,10 +1,3 @@
-use crossterm::event::{Event, KeyCode};
-use ratatui::{
-    layout::Alignment,
-    style::Color,
-    widgets::{Paragraph, Wrap},
-};
-
 use crate::{
     app::{
         shape::{path::Path, style::Style, Shape},
@@ -12,14 +5,22 @@ use crate::{
     },
     util::{Coord, Direction},
 };
+use crossterm::event::{Event, KeyCode};
+use ratatui::{
+    layout::Alignment,
+    style::Color,
+    widgets::{Paragraph, Wrap},
+};
+use serde::Deserialize;
 
 use super::{normal::NormalMode, Mode};
 
+#[derive(Debug, Deserialize)]
 enum Op {
     MoveCursor(Direction),
     /// Pop one step from path
     Back,
-    MakePath,
+    MakeShape,
     SelectNextStyle,
     SelectNextArrowState,
     Nop,
@@ -29,7 +30,7 @@ impl From<Event> for Op {
     fn from(e: Event) -> Self {
         match e {
             Event::Key(k) => match k.code {
-                KeyCode::Enter => Op::MakePath,
+                KeyCode::Enter => Op::MakeShape,
                 KeyCode::Char(c) => match c {
                     'h' => Op::MoveCursor(Direction::Left),
                     'j' => Op::MoveCursor(Direction::Down),
@@ -77,7 +78,7 @@ impl Mode for MakePathMode {
                 Some(dir) => (self, AppOp::MoveCanvasCursor(dir.opposite())),
                 None => (self, AppOp::Nop),
             },
-            Op::MakePath => {
+            Op::MakeShape => {
                 let op = if self.path.is_empty() {
                     AppOp::Nop
                 } else {
@@ -104,7 +105,9 @@ impl Mode for MakePathMode {
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("LINE [Enter]Complete, [s]Change Line Style");
+        let t = ratatui::text::Text::raw(
+            "LINE [↵]Complete, [s]Change Line Style [a]Change Arrow State",
+        );
         Paragraph::new(t)
             .style(
                 ratatui::style::Style::default()

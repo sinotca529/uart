@@ -1,0 +1,17 @@
+[keybind.make_rect]
+"h" = { MoveCursor = "Up" }
+"j" = { MoveCursor = "Down" }
+"k" = { MoveCursor = "Left" }
+"l" = { MoveCursor = "Right" }
+"s" = "NextStyle"
+"<CR>" = "MakeShape"
+
+[keybind.make_path]
+"h" = { MoveCursor = "Up" }
+"j" = { MoveCursor = "Down" }
+"k" = { MoveCursor = "Left" }
+"l" = { MoveCursor = "Right" }
+"s" = "SelectNextStyle"
+"a" = "SelectNextArrowState"
+"<CR>" = "MakeShape"
+"<BS>" = "Back"

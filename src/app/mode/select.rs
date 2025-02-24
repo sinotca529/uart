@@ -93,7 +93,7 @@ impl Mode for SelectMode {
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("SELECT [sp]toggle select [d]delete [S-h/j/k/l]move");
+        let t = ratatui::text::Text::raw("SELECT [ ]toggle select [d]delete [HJKL]move");
         Paragraph::new(t)
             .style(
                 Style::default()

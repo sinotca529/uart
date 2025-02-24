@@ -17,6 +17,7 @@ use ratatui::{
 };
 
 /// Operations for normal mode.
+#[derive(Debug)]
 enum Op {
     /// Change to cmd mode.
     EnterCmd,
@@ -92,7 +93,7 @@ impl Mode for NormalMode {
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("NORM [:]cmd [r]rect [t]text [p]path [SP]select");
+        let t = ratatui::text::Text::raw("NORM [:]cmd [r]rect [t]text [p]path [ ]select [hjkl]move cursor");
         Paragraph::new(t)
             .style(
                 Style::default()

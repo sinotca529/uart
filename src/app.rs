@@ -1,5 +1,8 @@
 mod canvas;
 mod cmd_line;
+pub mod config;
+mod keybind;
+mod keybind_manager;
 mod mode;
 mod shape;
 

@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.93"
 crossterm = "0.28.1"
+peg = "0.8.4"
 ratatui = "0.29.0"
+serde = { version = "1.0.217", features = ["derive"] }
 thiserror = "2.0.3"
+toml = "0.8.19"
 unicode-width = "0.2.0"
