@@ -1,84 +1,85 @@
-use super::{normal::NormalMode, Mode};
+use std::collections::HashMap;
+
+use super::{Mode, NextMode};
 use crate::{
     app::{
         canvas::CanvasHandler,
+        keybind::KeySequence,
+        keybind_manager::EventToOp,
         shape::{text::Text, Shape},
         AppOp,
     },
     util::Coord,
 };
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::{Event, KeyCode};
 use ratatui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
 };
+use serde::Deserialize;
 use unicode_width::UnicodeWidthChar;
 
-enum Op {
+#[derive(Clone, Deserialize, Debug)]
+pub enum Op {
     MakeText,
     AddChar(char),
     Enter,
     Backspace,
-    Nop,
 }
 
-impl From<Event> for Op {
-    fn from(e: Event) -> Self {
-        match e {
-            Event::Key(k) => match k.code {
-                KeyCode::Enter if k.modifiers == KeyModifiers::NONE => Op::Enter,
-                KeyCode::Enter if k.modifiers == KeyModifiers::SHIFT => Op::MakeText,
-                KeyCode::Char(c) => Op::AddChar(c),
-                KeyCode::Backspace => Op::Backspace,
-                _ => Op::Nop,
-            },
-            _ => Op::Nop,
-        }
-    }
-}
-
-pub struct MakeTextMode {
+pub struct MakeTextMode<'a> {
     start_coord: Coord,
     text: Text,
+    kb_mgr: EventToOp<'a, Op>,
 }
 
-impl MakeTextMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
+impl<'a> MakeTextMode<'a> {
+    pub fn new(keybindings: &'a HashMap<KeySequence, Op>, canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
             text: Text::new(String::new()),
+            kb_mgr: EventToOp::new(keybindings),
         }
     }
 }
 
-impl Mode for MakeTextMode {
-    fn next(
-        mut self: Box<Self>,
-        e: Event,
-        canvas_handler: &CanvasHandler,
-    ) -> (Box<dyn Mode>, AppOp) {
+impl Mode for MakeTextMode<'_> {
+    fn next(&mut self, e: Event, canvas_handler: &CanvasHandler) -> (NextMode, AppOp) {
+        let fall_back_op = match e {
+            Event::Key(k) => match k.code {
+                KeyCode::Char(c) => Some(Op::AddChar(c)),
+                KeyCode::Backspace => Some(Op::Backspace),
+                KeyCode::Enter => Some(Op::Enter),
+                _ => None,
+            },
+            _ => None,
+        };
+        let Some(op) = self.kb_mgr.convert(e).or(fall_back_op) else {
+            return (NextMode::Current, AppOp::Nop);
+        };
+
         let mut cursor_coord = canvas_handler.cursor_coord();
-        match e.into() {
-            Op::Nop => (self, AppOp::Nop),
+        match op {
             Op::MakeText => {
                 let op = if self.text.is_empty() {
                     AppOp::Nop
                 } else {
-                    AppOp::MakeShape(self.start_coord, Box::new(self.text))
+                    let text = std::mem::take(&mut self.text);
+                    AppOp::MakeShape(self.start_coord, Box::new(text))
                 };
-                (Box::new(NormalMode), op)
+                (NextMode::Normal, op)
             }
             Op::AddChar(c) => {
                 self.text.push(c);
                 cursor_coord.x += c.width().unwrap() as i16;
-                (self, AppOp::SetCanvasCursor(cursor_coord))
+                (NextMode::Current, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Enter => {
                 self.text.push('\n');
                 cursor_coord.y += 1;
                 cursor_coord.x = self.start_coord.x;
-                (self, AppOp::SetCanvasCursor(cursor_coord))
+                (NextMode::Current, AppOp::SetCanvasCursor(cursor_coord))
             }
             Op::Backspace => {
                 let c = self.text.pop();
@@ -92,7 +93,7 @@ impl Mode for MakeTextMode {
                     }
                     _ => {}
                 }
-                (self, AppOp::SetCanvasCursor(cursor_coord))
+                (NextMode::Current, AppOp::SetCanvasCursor(cursor_coord))
             }
         }
     }

@@ -1,4 +1,4 @@
-use super::{normal::NormalMode, Mode};
+use super::{Mode, NextMode};
 use crate::app::{canvas::CanvasHandler, AppOp};
 use crossterm::event::{Event, KeyCode};
 use ratatui::{
@@ -52,7 +52,7 @@ impl Default for CmdMode {
 }
 
 impl Mode for CmdMode {
-    fn next(mut self: Box<Self>, e: Event, _: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
+    fn next(&mut self, e: Event, _: &CanvasHandler) -> (NextMode, AppOp) {
         match e.into() {
             Op::Enter => {
                 let app_op = if self.cmd == ":q" {
@@ -61,22 +61,21 @@ impl Mode for CmdMode {
                     AppOp::Nop
                 };
 
-                let next_mode = Box::new(NormalMode::new());
-                (next_mode, app_op)
+                (NextMode::Normal, app_op)
             }
             Op::Char(c) => {
                 self.cmd.push(c);
-                (self, AppOp::Nop)
+                (NextMode::Current, AppOp::Nop)
             }
             Op::BackSpace => {
                 self.cmd.pop();
                 if self.cmd.is_empty() {
-                    (Box::new(NormalMode::new()), AppOp::Nop)
+                    (NextMode::Normal, AppOp::Nop)
                 } else {
-                    (self, AppOp::Nop)
+                    (NextMode::Current, AppOp::Nop)
                 }
             }
-            Op::Nop => (self, AppOp::Nop),
+            Op::Nop => (NextMode::Current, AppOp::Nop),
         }
     }
 

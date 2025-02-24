@@ -1,25 +1,29 @@
 mod command;
-mod dummy;
-mod make_path;
-mod make_rect;
-mod make_text;
-mod normal;
-mod select;
+pub mod make_path;
+pub mod make_rect;
+pub mod make_text;
+pub mod normal;
+pub mod select;
 
 use self::normal::NormalMode;
 use super::{
-    canvas::{CanvasHandler, ShapeIdSet},
+    canvas::{CanvasHandler, ShapeId, ShapeIdSet},
     cmd_line::CmdLine,
+    config::KeyBindings,
     shape::Shape,
     AppOp,
 };
 use crate::util::Coord;
+use command::CmdMode;
 use crossterm::event::Event;
-use dummy::DummyMode;
+use make_path::MakePathMode;
+use make_rect::MakeRectMode;
+use make_text::MakeTextMode;
 use ratatui::widgets::Paragraph;
+use select::SelectMode;
 
 pub trait Mode {
-    fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp);
+    fn next(&mut self, e: Event, canvas_handler: &CanvasHandler) -> (NextMode, AppOp);
 
     /// Additional shapes to render on the canvas.
     fn additinal_canvas_shapes(&self, _canvas_cursor: Coord) -> Vec<(Coord, Box<dyn Shape>)> {
@@ -39,23 +43,54 @@ pub trait Mode {
     }
 }
 
-pub struct ModeHandler(Box<dyn Mode>);
-
-impl Default for ModeHandler {
-    fn default() -> Self {
-        Self(Box::new(NormalMode::new()))
-    }
+pub enum NextMode {
+    /// Do not change the mode
+    Current,
+    Normal,
+    Select(ShapeId),
+    Command,
+    MakeRect,
+    MakeText,
+    MakePath,
 }
 
-impl ModeHandler {
+pub struct ModeHandler<'a> {
+    mode: Box<dyn Mode + 'a>,
+    key_bindings: &'a KeyBindings,
+}
+
+impl<'a> ModeHandler<'a> {
+    pub fn new(key_bindings: &'a KeyBindings) -> Self {
+        Self {
+            mode: Box::new(NormalMode::new(&key_bindings.normal)),
+            key_bindings,
+        }
+    }
+
     pub fn process_event(&mut self, event: Event, canvas_handler: &CanvasHandler) -> AppOp {
-        let current_mode = std::mem::replace(&mut self.0, Box::new(DummyMode::new()));
-        let (next_mode, app_op) = current_mode.next(event, canvas_handler);
-        self.0 = next_mode;
+        let cursor = canvas_handler.cursor_coord();
+        let (next_mode, app_op) = self.mode.next(event, canvas_handler);
+        match next_mode {
+            NextMode::Current => {}
+            NextMode::Normal => self.mode = Box::new(NormalMode::new(&self.key_bindings.normal)),
+            NextMode::Select(id) => {
+                self.mode = Box::new(SelectMode::new(&self.key_bindings.select, id))
+            }
+            NextMode::Command => self.mode = Box::new(CmdMode::new()),
+            NextMode::MakeRect => {
+                self.mode = Box::new(MakeRectMode::new(&self.key_bindings.make_rect, cursor))
+            }
+            NextMode::MakeText => {
+                self.mode = Box::new(MakeTextMode::new(&self.key_bindings.make_text, cursor))
+            }
+            NextMode::MakePath => {
+                self.mode = Box::new(MakePathMode::new(&self.key_bindings.make_path, cursor))
+            }
+        };
         app_op
     }
 
     pub fn get(&self) -> &dyn Mode {
-        self.0.as_ref()
+        self.mode.as_ref()
     }
 }

@@ -1,12 +1,8 @@
-use super::{
-    command::CmdMode, make_path::MakePathMode, make_rect::MakeRectMode, make_text::MakeTextMode,
-    select::SelectMode, Mode,
-};
+use std::collections::HashMap;
+
+use super::{Mode, NextMode};
 use crate::{
-    app::{
-        canvas::{CanvasHandler, ShapeId},
-        AppOp,
-    },
+    app::{canvas::CanvasHandler, keybind::KeySequence, keybind_manager::EventToOp, AppOp},
     util::Direction,
 };
 use crossterm::event::{Event, KeyCode};
@@ -15,10 +11,13 @@ use ratatui::{
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
 };
+use serde::Deserialize;
 
 /// Operations for normal mode.
-enum Op {
+#[derive(Clone, Deserialize, Debug)]
+pub enum Op {
     /// Change to cmd mode.
+    #[serde(skip)]
     EnterCmd,
     /// Change to make rect mode.
     EnterMakeRect,
@@ -29,70 +28,51 @@ enum Op {
     /// Move Cursor
     MoveCursor(Direction),
     /// Toggle the selection state of the shape directly under the cursor.
-    EnterSelectShape(ShapeId),
-    /// Do nothing.
-    Nop,
+    EnterSelectShape,
 }
 
-impl From<(Event, &CanvasHandler)> for Op {
-    fn from((e, ch): (Event, &CanvasHandler)) -> Self {
-        match e {
-            Event::Key(k) => match k.code {
-                KeyCode::Char(c) => match c {
-                    ':' => Op::EnterCmd,
-                    'h' => Op::MoveCursor(Direction::Left),
-                    'j' => Op::MoveCursor(Direction::Down),
-                    'k' => Op::MoveCursor(Direction::Up),
-                    'l' => Op::MoveCursor(Direction::Right),
-                    'r' => Op::EnterMakeRect,
-                    'p' => Op::EnterMakePath,
-                    't' => Op::EnterMakeText,
-                    ' ' => match ch.shape_id_under_the_cursor() {
-                        Some(id) => Op::EnterSelectShape(id),
-                        None => Op::Nop,
-                    },
-                    _ => Op::Nop,
-                },
-                _ => Op::Nop,
-            },
-            _ => Op::Nop,
+pub struct NormalMode<'a> {
+    kb_mgr: EventToOp<'a, Op>,
+}
+
+impl<'a> NormalMode<'a> {
+    pub fn new(keybindings: &'a HashMap<KeySequence, Op>) -> Self {
+        Self {
+            kb_mgr: EventToOp::new(keybindings),
         }
     }
 }
 
-pub struct NormalMode;
+impl Mode for NormalMode<'_> {
+    fn next(&mut self, e: Event, canvas_handler: &CanvasHandler) -> (NextMode, AppOp) {
+        let force_op = match e {
+            Event::Key(k) => match k.code {
+                KeyCode::Char(':') => Some(Op::EnterCmd),
+                _ => None,
+            },
+            _ => None,
+        };
+        let Some(op) = force_op.or(self.kb_mgr.convert(e)) else {
+            return (NextMode::Current, AppOp::Nop);
+        };
 
-impl NormalMode {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl Default for NormalMode {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Mode for NormalMode {
-    fn next(self: Box<Self>, e: Event, canvas_handler: &CanvasHandler) -> (Box<dyn Mode>, AppOp) {
-        let cursor = canvas_handler.cursor();
-        match (e, canvas_handler).into() {
-            Op::EnterCmd => {
-                let cmd = Box::new(CmdMode::new());
-                (cmd, AppOp::Nop)
-            }
-            Op::Nop => (self, AppOp::Nop),
-            Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
-            Op::EnterMakeRect => (Box::new(MakeRectMode::new(cursor.coord())), AppOp::Nop),
-            Op::EnterMakePath => (Box::new(MakePathMode::new(cursor.coord())), AppOp::Nop),
-            Op::EnterMakeText => (Box::new(MakeTextMode::new(cursor.coord())), AppOp::Nop),
-            Op::EnterSelectShape(id) => (Box::new(SelectMode::new(id)), AppOp::Nop),
+        match op {
+            Op::EnterCmd => (NextMode::Command, AppOp::Nop),
+            Op::MoveCursor(d) => (NextMode::Current, AppOp::MoveCanvasCursor(d)),
+            Op::EnterMakeRect => (NextMode::MakeRect, AppOp::Nop),
+            Op::EnterMakePath => (NextMode::MakePath, AppOp::Nop),
+            Op::EnterMakeText => (NextMode::MakeText, AppOp::Nop),
+            Op::EnterSelectShape => match canvas_handler.shape_id_under_the_cursor() {
+                Some(id) => (NextMode::Select(id), AppOp::Nop),
+                None => (NextMode::Current, AppOp::Nop),
+            },
         }
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("NORM [:]cmd [r]rect [t]text [p]path [SP]select");
+        let t = ratatui::text::Text::raw(
+            "NORM [:]cmd [r]rect [t]text [p]path [ ]select [hjkl]move cursor",
+        );
         Paragraph::new(t)
             .style(
                 Style::default()

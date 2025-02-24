@@ -1,99 +1,84 @@
-use crossterm::event::{Event, KeyCode};
-use ratatui::{
-    layout::Alignment,
-    style::Color,
-    widgets::{Paragraph, Wrap},
-};
+use std::collections::HashMap;
 
 use crate::{
     app::{
+        canvas::CanvasHandler,
+        keybind::KeySequence,
+        keybind_manager::EventToOp,
         shape::{path::Path, style::Style, Shape},
         AppOp,
     },
     util::{Coord, Direction},
 };
+use crossterm::event::Event;
+use ratatui::{
+    layout::Alignment,
+    style::Color,
+    widgets::{Paragraph, Wrap},
+};
+use serde::Deserialize;
 
-use super::{normal::NormalMode, Mode};
+use super::{Mode, NextMode};
 
-enum Op {
+#[derive(Clone, Deserialize, Debug)]
+pub enum Op {
     MoveCursor(Direction),
     /// Pop one step from path
     Back,
-    MakePath,
+    MakeShape,
     SelectNextStyle,
     SelectNextArrowState,
     Nop,
 }
 
-impl From<Event> for Op {
-    fn from(e: Event) -> Self {
-        match e {
-            Event::Key(k) => match k.code {
-                KeyCode::Enter => Op::MakePath,
-                KeyCode::Char(c) => match c {
-                    'h' => Op::MoveCursor(Direction::Left),
-                    'j' => Op::MoveCursor(Direction::Down),
-                    'k' => Op::MoveCursor(Direction::Up),
-                    'l' => Op::MoveCursor(Direction::Right),
-                    's' => Op::SelectNextStyle,
-                    'a' => Op::SelectNextArrowState,
-                    _ => Op::Nop,
-                },
-                KeyCode::Backspace => Op::Back,
-                _ => Op::Nop,
-            },
-            _ => Op::Nop,
-        }
-    }
-}
-
-pub struct MakePathMode {
+pub struct MakePathMode<'a> {
     start_coord: Coord,
     path: Path,
+    kb_mgr: EventToOp<'a, Op>,
 }
 
-impl MakePathMode {
-    pub fn new(canvas_cursor: Coord) -> Self {
+impl<'a> MakePathMode<'a> {
+    pub fn new(keybindings: &'a HashMap<KeySequence, Op>, canvas_cursor: Coord) -> Self {
         Self {
             start_coord: canvas_cursor,
             path: Path::new(vec![], false, false, Style::Single),
+            kb_mgr: EventToOp::new(keybindings),
         }
     }
 }
 
-impl Mode for MakePathMode {
-    fn next(
-        mut self: Box<Self>,
-        e: Event,
-        _canvas_handler: &crate::app::canvas::CanvasHandler,
-    ) -> (Box<dyn Mode>, crate::app::AppOp) {
-        match e.into() {
-            Op::Nop => (self, AppOp::Nop),
+impl Mode for MakePathMode<'_> {
+    fn next(&mut self, e: Event, _canvas_handler: &CanvasHandler) -> (NextMode, crate::app::AppOp) {
+        let Some(op) = self.kb_mgr.convert(e) else {
+            return (NextMode::Current, AppOp::Nop);
+        };
+
+        match op {
+            Op::Nop => (NextMode::Current, AppOp::Nop),
             Op::MoveCursor(d) => {
                 self.path.push_path(d);
-                (self, AppOp::MoveCanvasCursor(d))
+                (NextMode::Current, AppOp::MoveCanvasCursor(d))
             }
             Op::Back => match self.path.pop_path() {
-                Some(dir) => (self, AppOp::MoveCanvasCursor(dir.opposite())),
-                None => (self, AppOp::Nop),
+                Some(dir) => (NextMode::Current, AppOp::MoveCanvasCursor(dir.opposite())),
+                None => (NextMode::Current, AppOp::Nop),
             },
-            Op::MakePath => {
+            Op::MakeShape => {
                 let op = if self.path.is_empty() {
                     AppOp::Nop
                 } else {
                     let upper_left = self.start_coord + self.path.start_to_upper_left();
                     AppOp::MakeShape(upper_left, Box::new(self.path.clone()))
                 };
-                let mode = Box::new(NormalMode);
-                (mode, op)
+                (NextMode::Normal, op)
             }
             Op::SelectNextStyle => {
                 self.path.set_next_line_style();
-                (self, AppOp::Nop)
+                (NextMode::Current, AppOp::Nop)
             }
             Op::SelectNextArrowState => {
                 self.path.set_next_arrow_state();
-                (self, AppOp::Nop)
+                (NextMode::Current, AppOp::Nop)
             }
         }
     }
@@ -104,7 +89,9 @@ impl Mode for MakePathMode {
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("LINE [Enter]Complete, [s]Change Line Style");
+        let t = ratatui::text::Text::raw(
+            "LINE [↵]Complete, [s]Change Line Style [a]Change Arrow State",
+        );
         Paragraph::new(t)
             .style(
                 ratatui::style::Style::default()

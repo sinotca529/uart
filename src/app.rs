@@ -1,11 +1,15 @@
 mod canvas;
 mod cmd_line;
+pub mod config;
+mod keybind;
+mod keybind_manager;
 mod mode;
 mod shape;
 
 use self::{canvas::CanvasHandler, mode::ModeHandler, shape::Shape};
 use crate::util::{Coord, Size};
 use canvas::ShapeIdSet;
+use config::Config;
 use crossterm::{
     event, execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -27,15 +31,17 @@ pub enum AppOp {
 }
 
 /// The application
-#[derive(Default)]
-pub struct App {
+pub struct App<'a> {
     canvas_handler: CanvasHandler,
-    mode: ModeHandler,
+    mode: ModeHandler<'a>,
 }
 
-impl App {
-    pub fn new() -> Self {
-        App::default()
+impl<'a> App<'a> {
+    pub fn new(config: &'a Config) -> Self {
+        Self {
+            canvas_handler: Default::default(),
+            mode: ModeHandler::new(config.keybind()),
+        }
     }
 
     fn render(&mut self, f: &mut Frame) {

@@ -1,0 +1,47 @@
+[keybind.normal]
+"h" = { MoveCursor = "Left" }
+"j" = { MoveCursor = "Down" }
+"k" = { MoveCursor = "Up" }
+"l" = { MoveCursor = "Right" }
+
+"r" = "EnterMakeRect"
+"p" = "EnterMakePath"
+"t" = "EnterMakeText"
+"<Space>" = "EnterSelectShape"
+
+[keybind.select]
+"h" = { MoveCursor = "Left" }
+"j" = { MoveCursor = "Down" }
+"k" = { MoveCursor = "Up" }
+"l" = { MoveCursor = "Right" }
+
+"H" = { MoveShapes = "Left" }
+"J" = { MoveShapes = "Down" }
+"K" = { MoveShapes = "Up" }
+"L" = { MoveShapes = "Right" }
+
+"d" = "DeleteShapes"
+"<Esc>" = "EnterNormalMode"
+"<Space>" = "ToggleSelect"
+
+
+[keybind.make_rect]
+"h" = { MoveCursor = "Left" }
+"j" = { MoveCursor = "Down" }
+"k" = { MoveCursor = "Up" }
+"l" = { MoveCursor = "Right" }
+"s" = "NextStyle"
+"<CR>" = "MakeShape"
+
+[keybind.make_path]
+"h" = { MoveCursor = "Left" }
+"j" = { MoveCursor = "Down" }
+"k" = { MoveCursor = "Up" }
+"l" = { MoveCursor = "Right" }
+"s" = "SelectNextStyle"
+"a" = "SelectNextArrowState"
+"<CR>" = "MakeShape"
+"<BS>" = "Back"
+
+[keybind.make_text]
+"<S-CR>" = "MakeText"

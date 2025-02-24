@@ -1,20 +1,26 @@
-use super::{normal::NormalMode, Mode};
+use std::collections::HashMap;
+
+use super::{Mode, NextMode};
 use crate::{
     app::{
         canvas::{CanvasHandler, ShapeId, ShapeIdSet},
+        keybind::KeySequence,
+        keybind_manager::EventToOp,
         AppOp,
     },
     util::Direction,
 };
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use ratatui::{
     layout::Alignment,
     style::{Color, Style},
     widgets::{Paragraph, Wrap},
 };
+use serde::Deserialize;
 
-enum Op {
-    ToggleSelect(ShapeId),
+#[derive(Clone, Deserialize, Debug)]
+pub enum Op {
+    ToggleSelect,
     MoveCursor(Direction),
     MoveShapes(Direction),
     DeleteShapes,
@@ -22,78 +28,60 @@ enum Op {
     Nop,
 }
 
-impl From<(Event, &CanvasHandler)> for Op {
-    fn from((e, ch): (Event, &CanvasHandler)) -> Self {
-        match e {
-            Event::Key(k) => match k.code {
-                KeyCode::Esc => Op::EnterNormalMode,
-                KeyCode::Char(c) => match c {
-                    ' ' => match ch.shape_id_under_the_cursor() {
-                        Some(id) => Op::ToggleSelect(id),
-                        None => Op::Nop,
-                    },
-                    'd' => Op::DeleteShapes,
-                    'h' => Op::MoveCursor(Direction::Left),
-                    'j' => Op::MoveCursor(Direction::Down),
-                    'k' => Op::MoveCursor(Direction::Up),
-                    'l' => Op::MoveCursor(Direction::Right),
-                    'H' => Op::MoveShapes(Direction::Left),
-                    'J' => Op::MoveShapes(Direction::Down),
-                    'K' => Op::MoveShapes(Direction::Up),
-                    'L' => Op::MoveShapes(Direction::Right),
-                    _ => Op::Nop,
-                },
-                _ => Op::Nop,
-            },
-            _ => Op::Nop,
+pub struct SelectMode<'a> {
+    selected_shapes: ShapeIdSet,
+    kb_mgr: EventToOp<'a, Op>,
+}
+
+impl<'a> SelectMode<'a> {
+    /// id: initial selected shape
+    pub fn new(keybindings: &'a HashMap<KeySequence, Op>, id: ShapeId) -> Self {
+        let mut selected_shapes = ShapeIdSet::default();
+        selected_shapes.insert(&id);
+        Self {
+            selected_shapes,
+            kb_mgr: EventToOp::new(keybindings),
         }
     }
 }
 
-pub struct SelectMode {
-    selected_shapes: ShapeIdSet,
-}
+impl Mode for SelectMode<'_> {
+    fn next(&mut self, e: Event, canvas_handler: &CanvasHandler) -> (NextMode, crate::app::AppOp) {
+        let Some(op) = self.kb_mgr.convert(e) else {
+            return (NextMode::Current, AppOp::Nop);
+        };
 
-impl SelectMode {
-    /// id: initial selected shape
-    pub fn new(id: ShapeId) -> Self {
-        let mut selected_shapes = ShapeIdSet::default();
-        selected_shapes.insert(&id);
-        Self { selected_shapes }
-    }
-}
-
-impl Mode for SelectMode {
-    fn next(
-        mut self: Box<Self>,
-        e: Event,
-        canvas_hanler: &CanvasHandler,
-    ) -> (Box<dyn Mode>, crate::app::AppOp) {
-        match (e, canvas_hanler).into() {
-            Op::ToggleSelect(id) => {
+        match op {
+            Op::ToggleSelect => {
+                let Some(id) = canvas_handler.shape_id_under_the_cursor() else {
+                    return (NextMode::Current, AppOp::Nop);
+                };
                 self.selected_shapes.toggle(&id);
                 if self.selected_shapes.is_empty() {
-                    (Box::new(NormalMode::new()), AppOp::Nop)
+                    (NextMode::Normal, AppOp::Nop)
                 } else {
-                    (self, AppOp::Nop)
+                    (NextMode::Current, AppOp::Nop)
                 }
             }
-            Op::MoveCursor(d) => (self, AppOp::MoveCanvasCursor(d)),
+            Op::MoveCursor(d) => (NextMode::Current, AppOp::MoveCanvasCursor(d)),
             Op::MoveShapes(d) => {
                 let shapes = self.selected_shapes.clone();
-                (self, AppOp::MoveShapesAndCanvasCursor(shapes, d))
+                (
+                    NextMode::Current,
+                    AppOp::MoveShapesAndCanvasCursor(shapes, d),
+                )
             }
-            Op::DeleteShapes => (
-                Box::new(NormalMode::new()),
-                AppOp::DeleteShapes(self.selected_shapes),
-            ),
-            Op::EnterNormalMode => (Box::new(NormalMode::new()), AppOp::Nop),
-            Op::Nop => (self, AppOp::Nop),
+            Op::DeleteShapes => {
+                let shapes = std::mem::take(&mut self.selected_shapes);
+                (NextMode::Normal, AppOp::DeleteShapes(shapes))
+            }
+            Op::EnterNormalMode => (NextMode::Normal, AppOp::Nop),
+            Op::Nop => (NextMode::Current, AppOp::Nop),
         }
     }
 
     fn status_msg(&self) -> ratatui::widgets::Paragraph {
-        let t = ratatui::text::Text::raw("SELECT [sp]toggle select [d]delete [S-h/j/k/l]move");
+        let t = ratatui::text::Text::raw("SELECT [ ]toggle select [d]delete [HJKL]move");
         Paragraph::new(t)
             .style(
                 Style::default()

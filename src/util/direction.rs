@@ -1,4 +1,6 @@
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+use serde::Deserialize;
+
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Deserialize)]
 pub enum Direction {
     Up,
     Left,

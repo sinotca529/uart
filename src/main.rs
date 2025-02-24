@@ -1,7 +1,8 @@
-use app::App;
+use app::{config::Config, App};
 mod app;
 mod util;
 
 fn main() {
-    App::new().run();
+    let config = Config::load().unwrap();
+    App::new(&config).run();
 }
