@@ -4,5 +4,5 @@ mod util;
 
 fn main() {
     let config = Config::load().unwrap();
-    App::new(&config).run();
+    App::new(&config.into()).run();
 }
