@@ -20,10 +20,6 @@ impl Coord {
             Direction::Down => Self::new(self.x, self.y.saturating_add(1)),
         }
     }
-
-    pub fn offset(&self, base: Coord) -> Coord {
-        Coord::new(self.x - base.x, self.y - base.y)
-    }
 }
 
 impl Default for Coord {

@@ -60,7 +60,7 @@ impl CanvasHandler {
     /// This method must be called before rendering canvas.
     fn update_rendering_offset(&mut self) {
         //
-        //     Canvas
+        //     Entire Canvas
         //    ┌─────────────────────────┐
         //    │      Rendering area     │
         //    │      ┌───────────────┐  │
@@ -71,6 +71,7 @@ impl CanvasHandler {
         //    0      P               P+W
         //      (Prev offset)
         //
+        //   C: cursor position
         //
         //  Cursor Pos Range  | Next offset
         //  ==================|==============
@@ -79,12 +80,10 @@ impl CanvasHandler {
         //    [P+W, ∞)        |     C - (W - 1)
         //
         let calc = |c: i16, p: i16, w: i16| -> i16 {
-            if c < p {
-                c
-            } else if c < p + w {
-                p
-            } else {
-                c - (w - 1)
+            match c {
+                _ if c < p => c,
+                _ if c < p + w => p,
+                _ => c - (w - 1),
             }
         };
 
@@ -113,7 +112,7 @@ impl CanvasHandler {
             .iter()
             .rev()
             .find(|(_, (coord, shape))| {
-                let c = self.canvas.cursor.coord().offset(*coord);
+                let c = self.canvas.cursor.coord() - *coord;
                 shape.hit(c)
             })
             .map(|(id, _)| *id)
@@ -139,7 +138,7 @@ impl Widget for &mut CanvasHandler {
         // Render shapes.
         // id is used as z-index (ref: BTreeMap::iter)
         for (id, (coord, shape)) in &self.canvas.shapes {
-            let offset_from_area = coord.offset(self.rendering_offset);
+            let offset_from_area = *coord - self.rendering_offset;
             let color = if self.shapes_to_highlight.contains(id) {
                 Color::Blue
             } else {
@@ -148,7 +147,7 @@ impl Widget for &mut CanvasHandler {
             shape.render(offset_from_area, area, buf, color);
         }
         for (coord, shape) in self.additional_shapes.iter() {
-            let offset_from_area = coord.offset(self.rendering_offset);
+            let offset_from_area = *coord - self.rendering_offset;
             shape.render(offset_from_area, area, buf, Color::Green);
         }
 
